@@ -8,11 +8,39 @@ from pydantic import BaseModel
 app = FastAPI(title="Indic & Bengali Enterprise Gender Engine")
 
 # ==========================================
-# 1. PRESERVED HARDCODED CORPUS (ORIGINAL DATA)
+# 1. EXPANDED SURNAMES & TOKEN TITLES (MALE & FEMALE ONLY)
+# ==========================================
+
+# Female-specific markers & surnames (Checked first across entire full name)
+FEMALE_TOKENS = {
+    # Traditional Honorific Surnames & Titles
+    "devi", "kumari", "khatun", "khatoon", "bibi", "begum", "banu", "bano", 
+    "ara", "parveen", "parvin", "nisa", "unissa", "nesa", "bai", "rani", 
+    "dasi", "mahila", "shree", "bala"
+}
+
+# Male-specific markers & surnames (Checked across entire full name)
+MALE_TOKENS = {
+    # Traditional Honorific Surnames & Masculine Middle/Last Tokens
+    "kumar", "chandra", "nath", "prasad", "das", "singh", "lal", "babu", 
+    "da", "uddin", "ullah", "hussain", "hassan", "hasan", "khan", "ali", 
+    "mondal", "mandal", "halder", "sardar", "laskar", "molla", "mulla", 
+    "shaikh", "sheikh", "mallick", "gazi", "middey", "baidya", "ghosh", 
+    "bose", "mitra", "dutta", "chatterjee", "banerjee", "mukherjee", 
+    "ganguly", "chakraborty", "bhattacharya", "sen", "roy", "ray", "pal", 
+    "dey", "kundu", "saha", "barman", "majumdar", "adhikari", "samanta", 
+    "jana", "patra", "maity", "bera", "sasmal", "pradhan", "manna", "bag", 
+    "hazra", "kole", "panja", "shaw", "gupta", "agarwal", "sharma", "verma", 
+    "yadav", "tiwari", "pandey", "mishra", "dubey", "chaubey", "singha", 
+    "rawat", "joshi", "pathak", "thakur", "jha", "shukla"
+}
+
+# ==========================================
+# 2. PRESERVED HARDCODED CORPUS (ORIGINAL DATA)
 # ==========================================
 
 DB_MALE = {
-    # Bengali Male Names (Including -jeet variants and Sanskrit conjunct roots)
+    # Bengali Male Names
     "abhijeet", "abhijit", "abhijoy", "abhinaba", "abhinav", "abhinob", "abhirup", "abhishek",
     "indrajeet", "ranjeet", "satyajeet", "manjeet", "surjeet", "harjeet", "baljeet",
     "subrata", "debabrata", "satyabrata", "soumya", "sukanta", "shantanu", "santanab",
@@ -125,7 +153,7 @@ DB_FEMALE = {
 }
 
 # ==========================================
-# 2. ADD GIST DATASETS (EXPANDS BASE CORPUS)
+# 3. ADD GIST DATASETS (SYNC EXTRA 15K+ NAMES)
 # ==========================================
 
 @app.on_event("startup")
@@ -157,12 +185,12 @@ def load_gist_datasets():
         except Exception as e:
             print(f"Skipping external sync from {url}: {e}")
 
-    # Agar koi common conflicts aate hain toh unhe clean karein
+    # Remove overlapping names to avoid ambiguity
     conflicts = DB_MALE.intersection(DB_FEMALE)
     DB_MALE -= conflicts
     DB_FEMALE -= conflicts
 
-    # Core explicit entries hamesha override aur fixed rahenge
+    # Permanent High-Priority overrides
     DB_MALE.update([
         "ali", "imran", "ilyas", "abhijeet", "abhijit", "abhirup", "abhishek", 
         "subrata", "debabrata", "soumya", "joy", "tanmoy", "chinmoy", "diptesh", "krishna"
@@ -173,14 +201,11 @@ def load_gist_datasets():
     ])
 
 # ==========================================
-# 3. DETERMINISTIC HEURISTIC RULES
+# 4. MORPHOLOGICAL RULES (STRICT DICHOTOMY)
 # ==========================================
 
-FEMALE_TOKENS = {"devi", "kumari", "khatun", "bibi", "begum", "banu", "ara", "parveen", "nisa", "unissa"}
-MALE_TOKENS = {"kumar", "chandra", "nath", "prasad", "das", "singh", "lal", "babu", "da", "uddin", "ullah"}
 MALE_PREFIXES = ("abdul", "mohd", "mohammad", "muhammad", "md", "sk", "sheikh", "syed", "ghulam", "ali")
 
-# Male Suffixes (Evaluated first to protect -jeet, -jit, -joy)
 MALE_SUFFIXES = (
     "jeet", "jit", "joy", "rup", "brata", "kanta", "kanti", "sekhar", "shekhar",
     "moy", "shis", "shish", "esh", "kant", "anand", "dev", "deb", "dhar", "pal",
@@ -188,7 +213,6 @@ MALE_SUFFIXES = (
     "ron", "ran", "oy", "ey"
 )
 
-# Female Suffixes
 FEMALE_SUFFIXES = (
     "wati", "vati", "mati", "mita", "tika", "ika", "ita", "isha", "priya",
     "shree", "sri", "lata", "mala", "bala", "dita", "purna", "lekha", "shila",
@@ -215,27 +239,30 @@ def normalize_name(raw_name: str):
 def evaluate_gender(raw_name: str) -> str:
     tokens, token = normalize_name(raw_name)
     if not token:
-        return "Unknown"
+        return "Male"
 
-    # Step 1: Token-level deterministic titles
+    # Step 1: Check Female Honorifics/Surnames across ALL tokens first (High Priority)
     for t in tokens:
         if t in FEMALE_TOKENS:
             return "Female"
+
+    # Step 2: Check Male Surnames/Titles across ALL tokens
+    for t in tokens:
         if t in MALE_TOKENS:
             return "Male"
 
-    # Step 2: In-Memory Master Database Match
+    # Step 3: Check In-Memory Database for First Name
     if token in DB_FEMALE:
         return "Female"
     if token in DB_MALE:
         return "Male"
 
-    # Step 3: Prefix Matches (Abdul, Ali, Sk, Md)
+    # Step 4: Prefix Check (Abdul, Ali, Sk, Md)
     for pref in MALE_PREFIXES:
         if token.startswith(pref):
             return "Male"
 
-    # Step 4: Suffix Matches (Male evaluated first)
+    # Step 5: Suffix Heuristic (Male prioritized to preserve -jeet, -jit, -joy)
     for sfx in MALE_SUFFIXES:
         if token.endswith(sfx):
             return "Male"
@@ -244,25 +271,25 @@ def evaluate_gender(raw_name: str) -> str:
         if token.endswith(sfx):
             return "Female"
 
-    # Step 5: Anglo-Indian Diminutive (-y)
+    # Step 6: Anglo-Indian Pet Names (-y)
     if token.endswith("y") and not token.endswith(("oy", "ay", "ey")):
         return "Female"
 
-    # Step 6: Sanskrit Conjunct Endings with -a
+    # Step 7: Sanskrit Conjunct Endings with -a
     if token.endswith("a"):
         if re.search(r'(rta|bha|nya|tya|rka|nda|mba|rya|pta|tra|dra|ndra)$', token):
             return "Male"
         return "Female"
 
-    # Terminal Vowels
+    # Terminal Vowels typical to feminine Indian names
     if token.endswith(("i", "ee", "aa")):
         return "Female"
 
-    # Terminal Consonant Default
+    # Fallback: Default to Male (Eliminates "Unisex" / "Unknown")
     return "Male"
 
 # ==========================================
-# 4. FASTAPI ENDPOINTS
+# 5. FASTAPI ENDPOINTS
 # ==========================================
 
 @app.get("/")
