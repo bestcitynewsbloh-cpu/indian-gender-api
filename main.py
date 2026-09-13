@@ -8,38 +8,32 @@ from pydantic import BaseModel
 app = FastAPI(title="Indic & Bengali Enterprise Gender Engine")
 
 # ==========================================
-# 1. FEMALE & MALE SURNAME / TOKEN MARKERS
+# 1. FEMALE & MALE SPECIFIC HONORIFIC TOKENS
 # ==========================================
 
 FEMALE_TOKENS = {
-    # Traditional Honorific Surnames & Titles
     "devi", "kumari", "khatun", "khatoon", "bibi", "begum", "banu", "bano", 
-    "ara", "parveen", "parvin", "nisa", "unissa", "nesa", "bai", "rani", 
-    "dasi", "mahila", "shree", "bala"
+    "ara", "parvin", "nisa", "unissa", "nesa", "bai", "dasi", "mahila", "khatunbibi"
 }
 
-MALE_TOKENS = {
-    # Traditional Honorific Surnames & Masculine Middle/Last Tokens
-    "kumar", "chandra", "nath", "prasad", "das", "singh", "lal", "babu", 
-    "da", "uddin", "ullah", "hussain", "hassan", "hasan", "khan", "ali", 
-    "mondal", "mandal", "halder", "sardar", "laskar", "molla", "mulla", 
-    "shaikh", "sheikh", "mallick", "gazi", "middey", "baidya", "ghosh", 
-    "bose", "mitra", "dutta", "chatterjee", "banerjee", "mukherjee", 
-    "ganguly", "chakraborty", "bhattacharya", "sen", "roy", "ray", "pal", 
-    "dey", "kundu", "saha", "barman", "majumdar", "adhikari", "samanta", 
-    "jana", "patra", "maity", "bera", "sasmal", "pradhan", "manna", "bag", 
-    "hazra", "kole", "panja", "shaw", "gupta", "agarwal", "sharma", "verma", 
-    "yadav", "tiwari", "pandey", "mishra", "dubey", "chaubey", "singha", 
-    "rawat", "joshi", "pathak", "thakur", "jha", "shukla"
+MALE_EXCLUSIVE_TOKENS = {
+    "kumar", "chandra", "nath", "prasad", "lal", "babu", "da", "uddin", "ullah",
+    "chowdhury", "choudhury", "samaddar", "hoare"
 }
 
 # ==========================================
-# 2. MERGED PRODUCTION CORPUS (EXCEL + BASE)
+# 2. EXPANDED DATABASE CORPUS
 # ==========================================
 
 DB_MALE = {
-    "aayush", "abdhesh", "abdur", "abdul", "abhijeet", "abhijit", "abhijoy", "abhimanyu",
-    "abhinaba", "abhinav", "abhinesh", "abhinob", "abhirup", "abhisek", "abhishek",
+    # Names from the latest feedback
+    "gauranga", "surja", "mani", "sabasachi", "sabyasachi", "parsanta", "saugata",
+    "hari", "rajarshi", "sunny", "banty", "bharat", "susanta", "arkaprava",
+    "bubai", "roni", "naveen", "anthony", "bapi", "sushanta", "kanhaiya", "raja",
+    "chowdhury", "praveen", "prashant", "prashanta",
+
+    # Bengali Male Names
+    "abhijeet", "abhijit", "abhijoy", "abhinaba", "abhinav", "abhinesh", "abhinob", "abhirup", "abhisek", "abhishek",
     "abhishrk", "abu", "adesh", "aditya", "aftab", "afzal", "ahmad", "ahmed", "ahsan",
     "ajaat", "ajay", "ajit", "ajoy", "akash", "akbar", "akhtar", "akram", "akshay",
     "akshit", "alauddin", "ali", "alishah", "alkesh", "alok", "altaf", "amal", "aman",
@@ -136,24 +130,24 @@ DB_FEMALE = {
     "munni", "nafisa", "naina", "namita", "nandini", "nandita", "nargis", "nasreen",
     "nasrin", "neelam", "neha", "nikhat", "nikita", "nilanjana", "nilima", "nilufar",
     "nirmala", "nisha", "nupur", "nusrat", "padma", "pallabi", "pallavi", "paoli",
-    "paramita", "parbati", "paromita", "parveen", "parvin", "payal", "payel", "pinky",
-    "piya", "piyali", "poli", "pooja", "poornima", "prabha", "prachi", "prativa",
-    "pratima", "preeti", "prerna", "pritikana", "priya", "priyanka", "puja", "purnima",
-    "rabia", "radha", "radhika", "ragini", "rahela", "raima", "rakhi", "rani",
-    "rashmi", "ratna", "razia", "reba", "rehana", "rekha", "renu", "renuka", "resmi",
-    "richa", "rimpa", "rina", "rinki", "rituparna", "riya", "rokeya", "roksana",
-    "roma", "romola", "roshni", "ruby", "ruma", "rupa", "rupali", "rupashree", "sabera",
-    "sabina", "sabita", "sadia", "sahana", "saima", "sajeda", "sakshi", "saleha",
-    "salma", "samina", "samita", "sampa", "sanam", "sanchita", "sandhya", "sangeeta",
+    "paramita", "parbati", "paromita", "parveen", "payal", "payel", "pinky", "pinkey",
+    "piya", "piyali", "poli", "pooja", "puja", "poornima", "prabha", "prachi", "prativa",
+    "pratima", "preeti", "prerna", "pritikana", "priya", "priyanka", "purnima",
+    "rabia", "radhika", "ragini", "rahela", "raima", "rakhi", "rashmi", "ratna",
+    "razia", "reba", "rehana", "rekha", "renu", "renuka", "resmi", "richa", "rimpa",
+    "rina", "rinki", "rituparna", "riya", "rokeya", "roksana", "roma", "romola",
+    "roshni", "ruby", "ruma", "rupa", "rupali", "rupashree", "sabera", "sabina",
+    "sabita", "sadia", "sahana", "saima", "sajeda", "sakshi", "saleha", "salma",
+    "samina", "samita", "sampa", "sanam", "sanchita", "sandhya", "sangeeta",
     "sanghamitra", "sanida", "sanjida", "santwana", "sapna", "sarada", "sarama",
-    "saraswati", "sarita", "sarmistha", "saroj", "sarojini", "sayani", "sayantani",
-    "seema", "shabana", "shabnam", "shahana", "shahnaz", "shakuntala", "shameli",
-    "shampa", "shanta", "shanti", "sharada", "sharmila", "sharmistha", "sharmista",
+    "saraswati", "sarita", "sarmistha", "sarmista", "sarojini", "sayani", 
+    "sayantani", "seema", "shabana", "shabnam", "shahana", "shahnaz", "shakuntala", 
+    "shameli", "shampa", "shanta", "shanti", "sharada", "sharmila", "sharmistha", 
     "sheela", "sheena", "sheetal", "shefali", "shikha", "shipra", "shirin", "shobha",
     "shrabani", "shrestha", "shreya", "shruti", "shubhra", "shweta", "shyama", "simi",
     "simran", "simy", "smita", "sneha", "snigdha", "sohini", "soma", "sonali", "sonam",
     "srabanti", "subarna", "subhadra", "subhashree", "suchandra", "sucharita", "suchitra",
-    "sudeshna", "sudha", "sujata", "sukanya", "sukla", "sulekha", "sultana", "suman",
+    "sudeshna", "sudha", "sujata", "sukanya", "sukla", "sulekha", "sultana",
     "sumana", "sumati", "sumita", "sumitra", "sumaiya", "sunanda", "sunayana", "sunita",
     "suparna", "supriti", "supriya", "surabhi", "surobhita", "suruchi", "sushama",
     "sushila", "sushmita", "sutapa", "swapna", "swarnali", "swati", "sweety", "sweta",
@@ -165,7 +159,7 @@ DB_FEMALE = {
 }
 
 # ==========================================
-# 3. ADD GIST DATASETS (SYNC EXTRA 15K+ NAMES)
+# 3. GIST SYNC (ADDITIONAL CORPUS)
 # ==========================================
 
 @app.on_event("startup")
@@ -187,8 +181,7 @@ def load_gist_datasets():
                 for line in lines[1:]:
                     parts = line.strip().split(",")
                     if parts and parts[0]:
-                        raw_nm = parts[0].strip().lower()
-                        clean_nm = re.sub(r'[^a-z]', '', raw_nm)
+                        clean_nm = re.sub(r'[^a-z]', '', parts[0].strip().lower())
                         if len(clean_nm) >= 2:
                             if g_type == "female":
                                 DB_FEMALE.add(clean_nm)
@@ -197,30 +190,33 @@ def load_gist_datasets():
         except Exception as e:
             print(f"Skipping external sync from {url}: {e}")
 
-    # Remove overlapping names to eliminate ambiguity
+    # Remove overlapping names
     conflicts = DB_MALE.intersection(DB_FEMALE)
     DB_MALE -= conflicts
     DB_FEMALE -= conflicts
 
 # ==========================================
-# 4. MORPHOLOGICAL RULES (MALE / FEMALE ONLY)
+# 4. REFINED MORPHOLOGICAL RULES
 # ==========================================
 
 MALE_PREFIXES = ("abdul", "mohd", "mohammad", "muhammad", "md", "sk", "sheikh", "syed", "ghulam", "ali")
 
+# Specific masculine suffixes (checked first)
 MALE_SUFFIXES = (
     "jeet", "jit", "joy", "rup", "brata", "kanta", "kanti", "sekhar", "shekhar",
     "moy", "shis", "shish", "esh", "kant", "anand", "dev", "deb", "dhar", "pal",
     "nav", "veer", "ul", "it", "ik", "ak", "av", "am", "sh", "ay", "ab", "ban",
-    "ron", "ran", "oy", "ey"
+    "ron", "ran", "oy", "ey", "arat", "veen", "anthony", "anta", "anto", "prava",
+    "rshi", "sachi"
 )
 
+# Refined female suffixes (ambiguous -rat and -veen removed)
 FEMALE_SUFFIXES = (
     "wati", "vati", "mati", "mita", "tika", "ika", "ita", "isha", "priya",
     "shree", "sri", "lata", "mala", "bala", "dita", "purna", "lekha", "shila",
-    "rekha", "nita", "jani", "shikha", "rupa", "rani", "mani", "dharini",
-    "nandini", "sundari", "nab", "eena", "ina", "rat", "hat", "mat",
-    "nam", "sum", "yeen", "veen", "reen", "min", "rin", "qis", "gis"
+    "rekha", "nita", "jani", "shikha", "rupa", "dharini",
+    "nandini", "sundari", "nab", "eena", "ina", "usrat", "shrat", "khat", "smat",
+    "enat", "nnat", "nam", "sum", "yeen", "reen", "min", "rin", "qis", "gis"
 )
 
 HONORIFIC_REGEX = r'^(mr|mrs|ms|dr|shri|smt|miss|prof|master)\.?\s+'
@@ -243,51 +239,52 @@ def evaluate_gender(raw_name: str) -> str:
     if not token:
         return "Male"
 
-    # Step 1: Check Female Honorifics / Surnames across ALL tokens first (High Priority)
+    # Step 1: Check Female Explicit Honorifics (Kumari, Devi, Khatun, Bibi) across full name
     for t in tokens:
         if t in FEMALE_TOKENS:
             return "Female"
 
-    # Step 2: Check Male Surnames / Titles across ALL tokens
-    for t in tokens:
-        if t in MALE_TOKENS:
-            return "Male"
-
-    # Step 3: Check In-Memory Database for First Name
+    # Step 2: FIRST NAME Exact Match in Database (Top Priority)
     if token in DB_FEMALE:
         return "Female"
     if token in DB_MALE:
         return "Male"
 
-    # Step 4: Prefix Check (Abdul, Ali, Sk, Md)
+    # Step 3: Check Male Exclusive Titles (Kumar, Prasad, Nath, Chowdhury) across tokens
+    for t in tokens:
+        if t in MALE_EXCLUSIVE_TOKENS:
+            return "Male"
+
+    # Step 4: Prefix Check on First Name (Abdul, Ali, Sk, Md)
     for pref in MALE_PREFIXES:
         if token.startswith(pref):
             return "Male"
 
-    # Step 5: Suffix Heuristic (Male prioritized to preserve -jeet, -jit, -joy)
+    # Step 5: Male Suffixes Check (Preserves Bharat, Naveen, Susanta, Sabyasachi)
     for sfx in MALE_SUFFIXES:
         if token.endswith(sfx):
             return "Male"
 
+    # Step 6: Female Suffixes Check
     for sfx in FEMALE_SUFFIXES:
         if token.endswith(sfx):
             return "Female"
 
-    # Step 6: Anglo-Indian Pet Names (-y)
-    if token.endswith("y") and not token.endswith(("oy", "ay", "ey")):
-        return "Female"
-
-    # Step 7: Sanskrit Conjunct Endings with -a
+    # Step 7: Sanskrit / Bengali Conjunct Endings with -a (Masculine like Gauranga, Surja)
     if token.endswith("a"):
-        if re.search(r'(rta|bha|nya|tya|rka|nda|mba|rya|pta|tra|dra|ndra)$', token):
+        if re.search(r'(rta|bha|nya|tya|rka|nda|mba|rya|pta|tra|dra|ndra|nga|rja|nta|gata|prava|iya|aya|aja)$', token):
             return "Male"
         return "Female"
 
-    # Terminal Vowels typical to feminine Indian names
+    # Step 8: Terminal Vowels (Default to Female unless matched earlier)
     if token.endswith(("i", "ee", "aa")):
         return "Female"
 
-    # Strictly Binary Fallback: Default to Male
+    # Step 9: Anglo-Indian Pet Names (-y)
+    if token.endswith("y") and not token.endswith(("oy", "ay", "ey")):
+        return "Female"
+
+    # Fallback default
     return "Male"
 
 # ==========================================
