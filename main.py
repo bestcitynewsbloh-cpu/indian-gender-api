@@ -10,27 +10,29 @@ app = FastAPI(title="Production Indic & Bengali 50K Gender Engine")
 # ==========================================
 
 DB_MALE = {
-    # Bengali male names (including tricky -a / -o endings)
-    "abhinaba", "abhinob", "subrata", "debabrata", "satyabrata", "soumya", "sukanta",
-    "shantanu", "santanab", "tanmoy", "chinmoy", "mrinal", "arka", "rana", "anupam",
-    "pranab", "biplab", "sourav", "saurav", "anirban", "indranil", "nilanjan", "partha",
-    "sukomal", "dipankar", "subhas", "subhash", "kalyan", "prosenjit", "prasenjit",
-    "subhashis", "debjit", "tathagata", "saptarshi", "buddhadeb", "debashis", "ashis",
-    "avisek", "avishek", "shouvik", "souvik", "supratim", "debrup", "shubhankar",
-    "tamal", "kallol", "somnath", "abhijit", "abhijoy", "abhinav", "abhinesh", "abhirup",
-    "abhishek", "joy", "bijoy", "sanjay", "ajay", "sujay", "ranajit", "biswajit", "arijit",
-    "bappa", "barun", "basudev", "bhabesh", "bhola", "bibhas", "bidhan", "bikash",
-    "bikram", "binod", "binoy", "biren", "chandan", "chayan", "chittaranjan", "dhiman",
-    "dilip", "dipak", "dulal", "haradhan", "jayanta", "koustav", "mainak", "manas",
-    "manik", "mithun", "monir", "mousam", "niloy", "nirmal", "paresh", "pinaki", "prabhat",
-    "prabir", "pradip", "pramod", "pritom", "purnendu", "rabin", "rajat", "rajib", "ritam",
-    "saikat", "samar", "samrat", "sandip", "sanjoy", "sankar", "santu", "satyajit",
-    "shankha", "shashank", "shirish", "siddhartha", "soham", "sougata", "soumyajit",
-    "subal", "subhabrata", "subhadip", "subham", "subir", "subodh", "suhas", "sujan",
-    "sukhen", "suman", "surajit", "surya", "swapan", "swarup", "tanmay", "tapan",
-    "tapas", "tarun", "tuhin", "uday", "ujjwal", "utpal", "uttam",
+    # Bengali Male Names (Including -jeet variants and Sanskrit conjunct roots)
+    "abhijeet", "abhijit", "abhijoy", "abhinaba", "abhinav", "abhinob", "abhirup", "abhishek",
+    "indrajeet", "ranjeet", "satyajeet", "manjeet", "surjeet", "harjeet", "baljeet",
+    "subrata", "debabrata", "satyabrata", "soumya", "sukanta", "shantanu", "santanab",
+    "tanmoy", "chinmoy", "mrinal", "arka", "rana", "anupam", "pranab", "biplab",
+    "sourav", "saurav", "anirban", "indranil", "nilanjan", "partha", "sukomal",
+    "dipankar", "subhas", "subhash", "kalyan", "prosenjit", "prasenjit", "subhashis",
+    "debjit", "tathagata", "saptarshi", "buddhadeb", "debashis", "ashis", "avisek",
+    "avishek", "shouvik", "souvik", "supratim", "debrup", "shubhankar", "tamal",
+    "kallol", "somnath", "abhinesh", "joy", "bijoy", "sanjay", "ajay", "sujay",
+    "ranajit", "biswajit", "arijit", "bappa", "barun", "basudev", "bhabesh", "bhola",
+    "bibhas", "bidhan", "bikash", "bikram", "binod", "binoy", "biren", "chandan",
+    "chayan", "chittaranjan", "dhiman", "dilip", "dipak", "dulal", "haradhan",
+    "jayanta", "koustav", "mainak", "manas", "manik", "mithun", "monir", "mousam",
+    "niloy", "nirmal", "paresh", "pinaki", "prabhat", "prabir", "pradip", "pramod",
+    "pritom", "purnendu", "rabin", "rajat", "rajib", "ritam", "saikat", "samar",
+    "samrat", "sandip", "sanjoy", "sankar", "santu", "satyajit", "shankha", "shashank",
+    "shirish", "siddhartha", "soham", "sougata", "soumyajit", "subal", "subhabrata",
+    "subhadip", "subham", "subir", "subodh", "suhas", "sujan", "sukhen", "suman",
+    "surajit", "surya", "swapan", "swarup", "tanmay", "tapan", "tapas", "tarun",
+    "tuhin", "uday", "ujjwal", "utpal", "uttam",
 
-    # Islamic Male Names (Compound / Arabic / Urdu)
+    # Islamic Male First Names & Compounds
     "ali", "hussain", "hasan", "hassan", "ahsan", "mohammed", "mohammad", "muhammad",
     "ahmed", "ahmad", "tariq", "rashid", "arif", "shahid", "zahid", "waseem", "wasim",
     "nadeem", "mustafa", "murtaza", "saif", "aslam", "farhan", "salman", "rizwan",
@@ -44,7 +46,7 @@ DB_MALE = {
     "riyaz", "saddam", "salim", "sarfaraz", "sayed", "sayeed", "selim", "shabbir",
     "shahrukh", "shams", "shaukat", "siraj", "yasin", "yusuf", "zafar", "zishan", "zubair",
 
-    # Pan-Indian Male Names
+    # Pan-Indian Masculine Names
     "aayush", "ayush", "abdul", "abdhesh", "avdhesh", "rahul", "amit", "rajesh", "suresh",
     "vikram", "rohan", "arjun", "sachin", "prateek", "diptesh", "krishna", "gaurav",
     "manoj", "vijay", "anil", "sunil", "deepak", "rakesh", "ashok", "dinesh", "pankaj",
@@ -59,12 +61,12 @@ DB_MALE = {
 }
 
 DB_FEMALE = {
-    # Modern / Anglo / Pet names ending in -y
+    # Modern Diminutives & Pet Names
     "ruby", "dolly", "pinky", "rinky", "sweety", "mary", "lily", "daisy", "simy",
     "bobby", "munni", "baby", "tina", "rina", "mina", "sheena", "puja", "pooja",
     "simi", "tannu", "tanu",
 
-    # Tricky Islamic Female Names (Consonant endings: -b, -t, -m, -n, -s)
+    # Islamic Consonant & Classical Feminine Names
     "zainab", "zaynab", "maryam", "mariam", "shabnam", "tabassum", "kulsum", "kalsum",
     "nusrat", "ishrat", "nikhat", "ismat", "zeenat", "jannat", "nargis", "bilqis",
     "firdaus", "afreen", "yasmin", "yasmine", "nasrin", "nasreen", "shirin", "parveen",
@@ -76,7 +78,7 @@ DB_FEMALE = {
     "nilufar", "rahela", "rokeya", "sabera", "sabina", "sadia", "sajeda", "saleha",
     "sanjida", "shahnaz", "tarannum",
 
-    # Bengali Female Names
+    # Bengali Feminine Names
     "moumita", "debapriya", "madhumita", "anindita", "paramita", "sarmistha", "sharmistha",
     "piyali", "ruma", "chhanda", "sampa", "kakoli", "kakali", "baishakhi", "sucharita",
     "monalisa", "titas", "swarnali", "barnali", "sayani", "soma", "rupali", "jhuma",
@@ -92,7 +94,7 @@ DB_FEMALE = {
     "sohini", "srabanti", "subarna", "suchandra", "suchitra", "sudeshna", "sukanya",
     "sukla", "sulekha", "surobhita", "tarulata", "teesta", "tumpa", "utpala",
 
-    # Pan-Indian Female Names
+    # Pan-Indian Feminine Names
     "abantika", "avantika", "priya", "ananya", "sunita", "deepika", "kavita", "roshni",
     "meera", "swati", "tanvi", "aaradhya", "shruti", "neha", "sneha", "aarti", "divya",
     "anjali", "riya", "simran", "shreya", "payal", "komal", "pallavi", "radha", "seema",
@@ -111,13 +113,13 @@ DB_FEMALE = {
     "nilima", "nirmala", "nupur", "padma", "paramita", "parbati", "poornima", "prabha",
     "prativa", "pratima", "prerna", "priyanka", "purnima", "radhika", "ragini", "raima",
     "rakhi", "rani", "ratna", "reba", "renuka", "resmi", "richa", "roma", "rupa",
-    "sabita", "sahana", "sakshi", "sandhya", "sangeeta", "sapna", "sarada", "saraswati",
-    "sarita", "saroj", "sarojini", "shakuntala", "shanta", "shanti", "sharada", "sharmila",
-    "sheela", "shikha", "shipra", "shobha", "shubhra", "shyama", "smita", "sonali",
-    "subhadra", "sudha", "sujata", "sumana", "sumati", "sumita", "sumitra", "sunanda",
-    "sunayana", "suparna", "supriti", "supriya", "surabhi", "suruchi", "sushama",
-    "sushila", "sushmita", "swapna", "sweta", "tania", "tapasya", "tara", "trisha",
-    "uma", "urmila", "usha", "vaishali", "varsha", "vidya", "vinita"
+    "sabita", "sahana", "sandhya", "sangeeta", "sarada", "saraswati", "sarita", "saroj",
+    "sarojini", "shakuntala", "shanta", "shanti", "sharada", "sharmila", "sheela",
+    "shikha", "shipra", "shobha", "shubhra", "shyama", "smita", "sonali", "subhadra",
+    "sudha", "sujata", "sumana", "sumati", "sumita", "sumitra", "sunanda", "sunayana",
+    "suparna", "supriti", "supriya", "surabhi", "suruchi", "sushama", "sushila",
+    "sushmita", "swapna", "sweta", "tania", "tapasya", "tara", "trisha", "uma",
+    "urmila", "usha", "vaishali", "varsha", "vidya", "vinita"
 }
 
 # ==========================================
@@ -128,21 +130,21 @@ FEMALE_TOKENS = {"devi", "kumari", "khatun", "bibi", "begum", "banu", "ara", "pa
 MALE_TOKENS = {"kumar", "chandra", "nath", "prasad", "das", "singh", "lal", "babu", "da", "uddin", "ullah"}
 MALE_PREFIXES = ("abdul", "mohd", "mohammad", "muhammad", "md", "sk", "sheikh", "syed", "ghulam", "ali")
 
-# Specific Feminine Endings (covers Bengali, Vedic, Arabic, Persian)
-FEMALE_SUFFIXES = (
-    "wati", "vati", "mati", "mita", "tika", "ika", "ita", "isha", "priya", 
-    "shree", "sri", "lata", "mala", "bala", "dita", "purna", "lekha", "shila", 
-    "rekha", "nita", "jani", "shikha", "rupa", "rani", "mani", "dharini", 
-    "nandini", "sundari", "nab", "eena", "ina", "eet", "rat", "hat", "mat", 
-    "nam", "sum", "yeen", "veen", "reen", "min", "rin", "qis", "gis"
+# Male Suffixes (Evaluated first to protect -jeet, -jit, -joy)
+MALE_SUFFIXES = (
+    "jeet", "jit", "joy", "rup", "brata", "kanta", "kanti", "sekhar", "shekhar",
+    "moy", "shis", "shish", "esh", "kant", "anand", "dev", "deb", "dhar", "pal",
+    "nav", "veer", "ul", "it", "ik", "ak", "av", "am", "sh", "ay", "ab", "ban",
+    "ron", "ran", "oy", "ey"
 )
 
-# Specific Masculine Endings
-MALE_SUFFIXES = (
-    "jit", "jeet", "joy", "rup", "brata", "kanta", "kanti", "sekhar", "shekhar", 
-    "moy", "shis", "shish", "esh", "kant", "anand", "dev", "deb", "dhar", "pal", 
-    "nav", "veer", "ul", "it", "ik", "ak", "av", "am", "sh", "ay", "ab", "ban", 
-    "ron", "ran", "oy", "ey"
+# Female Suffixes (Removed 'eet' conflict)
+FEMALE_SUFFIXES = (
+    "wati", "vati", "mati", "mita", "tika", "ika", "ita", "isha", "priya",
+    "shree", "sri", "lata", "mala", "bala", "dita", "purna", "lekha", "shila",
+    "rekha", "nita", "jani", "shikha", "rupa", "rani", "mani", "dharini",
+    "nandini", "sundari", "nab", "eena", "ina", "rat", "hat", "mat",
+    "nam", "sum", "yeen", "veen", "reen", "min", "rin", "qis", "gis"
 )
 
 HONORIFIC_REGEX = r'^(mr|mrs|ms|dr|shri|smt|miss|prof|master)\.?\s+'
@@ -165,14 +167,14 @@ def evaluate_gender(raw_name: str) -> str:
     if not token:
         return "Unknown"
 
-    # Step 1: Middle/Last honorific token match
+    # Step 1: Token-level deterministic titles
     for t in tokens:
         if t in FEMALE_TOKENS:
             return "Female"
         if t in MALE_TOKENS:
             return "Male"
 
-    # Step 2: Instant Master Database Match (O(1))
+    # Step 2: Database Exact Match (O(1))
     if token in DB_FEMALE:
         return "Female"
     if token in DB_MALE:
@@ -183,33 +185,34 @@ def evaluate_gender(raw_name: str) -> str:
         if token.startswith(pref):
             return "Male"
 
-    # Step 4: Linguistic Morphological Suffixes
-    for sfx in FEMALE_SUFFIXES:
-        if token.endswith(sfx):
-            return "Female"
+    # Step 4: Suffix Matches (Check Male first to catch -jeet, -jit, -joy)
     for sfx in MALE_SUFFIXES:
         if token.endswith(sfx):
             return "Male"
 
-    # Step 5: Anglo/Diminutive Suffix (-y)
+    for sfx in FEMALE_SUFFIXES:
+        if token.endswith(sfx):
+            return "Female"
+
+    # Step 5: Anglo-Indian Diminutive (-y)
     if token.endswith("y") and not token.endswith(("oy", "ay", "ey")):
         return "Female"
 
-    # Step 6: Bengali Sanskrit Conjunct terminal (-a)
+    # Step 6: Sanskrit Conjunct Endings with -a
     if token.endswith("a"):
         if re.search(r'(rta|bha|nya|tya|rka|nda|mba|rya|pta|tra|dra|ndra)$', token):
             return "Male"
         return "Female"
 
-    # Terminal vowels (-i, -ee, -aa)
+    # Terminal Vowels
     if token.endswith(("i", "ee", "aa")):
         return "Female"
 
-    # Terminal Consonant default
+    # Terminal Consonant Default
     return "Male"
 
 # ==========================================
-# 3. FASTAPI ENDPOINTS
+# 3. ENDPOINTS
 # ==========================================
 
 @app.get("/")
