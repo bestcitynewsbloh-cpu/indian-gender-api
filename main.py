@@ -8,10 +8,9 @@ from pydantic import BaseModel
 app = FastAPI(title="Indic & Bengali Enterprise Gender Engine")
 
 # ==========================================
-# 1. EXPANDED SURNAMES & TOKEN TITLES (MALE & FEMALE ONLY)
+# 1. FEMALE & MALE SURNAME / TOKEN MARKERS
 # ==========================================
 
-# Female-specific markers & surnames (Checked first across entire full name)
 FEMALE_TOKENS = {
     # Traditional Honorific Surnames & Titles
     "devi", "kumari", "khatun", "khatoon", "bibi", "begum", "banu", "bano", 
@@ -19,7 +18,6 @@ FEMALE_TOKENS = {
     "dasi", "mahila", "shree", "bala"
 }
 
-# Male-specific markers & surnames (Checked across entire full name)
 MALE_TOKENS = {
     # Traditional Honorific Surnames & Masculine Middle/Last Tokens
     "kumar", "chandra", "nath", "prasad", "das", "singh", "lal", "babu", 
@@ -36,120 +34,134 @@ MALE_TOKENS = {
 }
 
 # ==========================================
-# 2. PRESERVED HARDCODED CORPUS (ORIGINAL DATA)
+# 2. MERGED PRODUCTION CORPUS (EXCEL + BASE)
 # ==========================================
 
 DB_MALE = {
-    # Bengali Male Names
-    "abhijeet", "abhijit", "abhijoy", "abhinaba", "abhinav", "abhinob", "abhirup", "abhishek",
-    "indrajeet", "ranjeet", "satyajeet", "manjeet", "surjeet", "harjeet", "baljeet",
-    "subrata", "debabrata", "satyabrata", "soumya", "sukanta", "shantanu", "santanab",
-    "tanmoy", "chinmoy", "mrinal", "arka", "rana", "anupam", "pranab", "biplab",
-    "sourav", "saurav", "anirban", "indranil", "nilanjan", "partha", "sukomal",
-    "dipankar", "subhas", "subhash", "kalyan", "prosenjit", "prasenjit", "subhashis",
-    "debjit", "tathagata", "saptarshi", "buddhadeb", "debashis", "ashis", "avisek",
-    "avishek", "shouvik", "souvik", "supratim", "debrup", "shubhankar", "tamal",
-    "kallol", "somnath", "abhinesh", "joy", "bijoy", "sanjay", "ajay", "sujay",
-    "ranajit", "biswajit", "arijit", "bappa", "barun", "basudev", "bhabesh", "bhola",
-    "bibhas", "bidhan", "bikash", "bikram", "binod", "binoy", "biren", "chandan",
-    "chayan", "chittaranjan", "dhiman", "dilip", "dipak", "dulal", "haradhan",
-    "jayanta", "koustav", "mainak", "manas", "manik", "mithun", "monir", "mousam",
-    "niloy", "nirmal", "paresh", "pinaki", "prabhat", "prabir", "pradip", "pramod",
-    "pritom", "purnendu", "rabin", "rajat", "rajib", "ritam", "saikat", "samar",
-    "samrat", "sandip", "sanjoy", "sankar", "santu", "satyajit", "shankha", "shashank",
-    "shirish", "siddhartha", "soham", "sougata", "soumyajit", "subal", "subhabrata",
-    "subhadip", "subham", "subir", "subodh", "suhas", "sujan", "sukhen", "suman",
-    "surajit", "surya", "swapan", "swarup", "tanmay", "tapan", "tapas", "tarun",
-    "tuhin", "uday", "ujjwal", "utpal", "uttam",
-
-    # Islamic Male First Names & Compounds
-    "ali", "hussain", "hasan", "hassan", "ahsan", "mohammed", "mohammad", "muhammad",
-    "ahmed", "ahmad", "tariq", "rashid", "arif", "shahid", "zahid", "waseem", "wasim",
-    "nadeem", "mustafa", "murtaza", "saif", "aslam", "farhan", "salman", "rizwan",
-    "altaf", "iqbal", "firoz", "tanvir", "tanveer", "ilyas", "elias", "imran", "irfan",
-    "azhar", "akhtar", "sajid", "shakir", "samir", "sameer", "rehan", "sohail", "suhail",
-    "afzal", "parvez", "shahnawaz", "shahbaz", "naim", "naeem", "javed", "babar", "bilal",
-    "abu", "akbar", "akram", "alauddin", "alishah", "amjad", "asad", "asif", "atik",
-    "dawood", "farooq", "fazle", "habib", "hafiz", "haider", "ibrahim", "imtiaz", "ismail",
-    "jahangir", "jalal", "jamal", "kabir", "mansoor", "masud", "motiur", "mubarak",
-    "murshid", "mushtaq", "nasir", "nazir", "nur", "rahim", "rahman", "reza", "riaz",
-    "riyaz", "saddam", "salim", "sarfaraz", "sayed", "sayeed", "selim", "shabbir",
-    "shahrukh", "shams", "shaukat", "siraj", "yasin", "yusuf", "zafar", "zishan", "zubair",
-
-    # Pan-Indian Masculine Names
-    "aayush", "ayush", "abdul", "abdhesh", "avdhesh", "rahul", "amit", "rajesh", "suresh",
-    "vikram", "rohan", "arjun", "sachin", "prateek", "diptesh", "krishna", "gaurav",
-    "manoj", "vijay", "anil", "sunil", "deepak", "rakesh", "ashok", "dinesh", "pankaj",
-    "mukesh", "alok", "vivek", "varun", "kunal", "sumit", "sourabh", "saurabh", "rohit",
-    "aman", "ankit", "mohit", "vicky", "nitin", "mayank", "ravi", "ram", "sham", "shyam",
-    "amar", "amal", "akshay", "akshit", "alkesh", "aditya", "akash", "anand", "animesh",
-    "arun", "badal", "bahadur", "debendra", "gautam", "gopal", "govind", "himanshu",
-    "kamal", "karan", "karthik", "kaushik", "keshav", "lakshman", "madhav", "manish",
-    "mukund", "munna", "naresh", "nayan", "nilesh", "piyush", "prakash", "pratik",
-    "prem", "rajeev", "rajendra", "ratan", "ronit", "sagar", "sandeep", "satish",
-    "shakti", "shambhu", "shekhar", "shivam", "shreyas", "shubham", "vinay", "vipin", "vishal"
+    "aayush", "abdhesh", "abdur", "abdul", "abhijeet", "abhijit", "abhijoy", "abhimanyu",
+    "abhinaba", "abhinav", "abhinesh", "abhinob", "abhirup", "abhisek", "abhishek",
+    "abhishrk", "abu", "adesh", "aditya", "aftab", "afzal", "ahmad", "ahmed", "ahsan",
+    "ajaat", "ajay", "ajit", "ajoy", "akash", "akbar", "akhtar", "akram", "akshay",
+    "akshit", "alauddin", "ali", "alishah", "alkesh", "alok", "altaf", "amal", "aman",
+    "amar", "ambuj", "amimesh", "amit", "amitabh", "amitava", "amjad", "amlesh", "amod",
+    "amol", "amrit", "amrito", "anadi", "anamik", "anand", "ananda", "ani", "anil",
+    "animesh", "aninda", "anindya", "anirban", "aniruddha", "anirup", "ankit", "anowar",
+    "ansuman", "anuj", "anup", "anupam", "anupom", "anurag", "apurba", "arghya", "arif",
+    "arijit", "arka", "arjun", "arpan", "arup", "arun", "arunabha", "arunangshu",
+    "asad", "asif", "ashis", "ashish", "ashit", "ashok", "asit", "aslam", "asoke",
+    "atik", "atul", "avdhesh", "avijit", "avisek", "avishek", "avranil", "ayush",
+    "azhar", "babar", "babu", "badal", "bahadur", "baidya", "baidyanath", "baljeet",
+    "banibrata", "bappa", "bappaditya", "barun", "basudev", "bhabesh", "bhola", "bibhas",
+    "bidhan", "bijan", "bijoy", "bikas", "bikash", "bikram", "bilal", "binod", "binoy",
+    "biplab", "bipul", "biren", "bireswar", "biresh", "biswajit", "biswanath", "bratin",
+    "buddhadeb", "bulbul", "chaitanya", "champak", "chandan", "chandi", "chandra",
+    "chandranath", "chayan", "chinmay", "chinmoy", "chittaranjan", "dawood", "debabrata",
+    "debal", "debasish", "debayan", "debbrata", "debdatta", "debendra", "debjit",
+    "debrata", "debrup", "deep", "deepak", "dhiman", "dhiraj", "dibyendu", "dilip",
+    "dinesh", "dipak", "dipankar", "dipen", "diptesh", "dulal", "elias", "farhan",
+    "farooq", "fazle", "firoz", "gadadhar", "gagan", "ganesh", "gaurav", "gautam",
+    "gobinda", "gopal", "gourab", "gouranga", "govind", "habib", "hafiz", "haider",
+    "haradhan", "haridas", "harihar", "harjeet", "hasan", "hassan", "himadri", "himangshu",
+    "himanshu", "hiranmoy", "hussain", "ibrahim", "ilyas", "imran", "imtiaz", "indrajit",
+    "indrajeet", "indranil", "iqbal", "irfan", "ismail", "jahangir", "jalal", "jamal",
+    "jasim", "javed", "jayanta", "jayanto", "jaydeb", "jeet", "jibon", "jitendra",
+    "jiten", "joy", "joyanta", "joydeb", "joydeep", "kabir", "kallol", "kalyan", "kamal",
+    "kamalesh", "kanai", "kanak", "kanti", "karan", "karthik", "karunamoy", "kashinath",
+    "kaushik", "keshab", "keshav", "khagendra", "kiron", "kishore", "koushik", "koustav",
+    "krishna", "krishnendu", "kunal", "lakshman", "lalit", "madhab", "madhav", "madhu",
+    "madhusudan", "mainak", "manas", "manash", "manik", "manindra", "manish", "manjeet",
+    "manoj", "mansoor", "masud", "mayank", "milan", "mithun", "mitul", "mohammad",
+    "mohammed", "mohit", "monir", "motiur", "mousam", "mrinal", "mubarak", "mukesh",
+    "mukund", "munna", "murshid", "mushtaq", "mustafa", "nadeem", "naeem", "naim",
+    "naresh", "nasir", "nayan", "nazir", "nilesh", "nilmoni", "niloy", "nirmal",
+    "nirmalya", "nitai", "nitin", "nur", "pabitra", "palash", "panchanan", "pankaj",
+    "parag", "parameswar", "paresh", "partha", "parvez", "pinaki", "piyush", "prabhat",
+    "prabir", "pradip", "pradyut", "prakash", "pramod", "pranab", "pranay", "prasenjit",
+    "prateek", "pratik", "pratul", "prem", "pritom", "priyabrata", "prokash", "proloy",
+    "prono", "pronob", "prosenjit", "pujit", "pulak", "pulin", "purnendu", "purushottam",
+    "rabin", "rabindra", "radha", "radhakanta", "radheshyam", "raghab", "raghunath",
+    "rahim", "rahman", "rahul", "rajat", "rajdip", "rajeev", "rajendra", "rajesh",
+    "rajib", "rakesh", "ram", "ramaprasad", "ramkrishna", "ramprasad", "rana", "ranabir",
+    "ranajit", "ranen", "ranendra", "ranjeet", "rashid", "ratan", "ratin", "ravi",
+    "rehan", "reza", "riaz", "ripun", "rishi", "ritam", "ritesh", "ritwik", "riyaz",
+    "rohan", "rohit", "ronit", "rupak", "rupam", "sachin", "saddam", "sagar", "saikat",
+    "saif", "sajid", "salim", "salman", "samar", "samarendra", "samarjit", "sambhu",
+    "sameer", "samir", "samiran", "samrat", "sandeep", "sandip", "sangram", "sanjay",
+    "sanjoy", "sankar", "santanab", "santu", "saptarshi", "saradindu", "sarat", "sarfaraz",
+    "saroj", "sarojit", "sasanka", "sasikanta", "satadal", "satikanta", "satish",
+    "satyabrata", "satyajit", "satyajeet", "satyaki", "satyaranjan", "saurabh", "saurav",
+    "sayed", "sayeed", "sekhar", "selim", "shabbir", "shahbaz", "shahid", "shahnawaz",
+    "shahrukh", "shakti", "sham", "shambhu", "shams", "shankha", "shantanu", "shashank",
+    "shaukat", "shekhar", "shirish", "shivam", "shouvik", "shreyas", "shubham",
+    "shubhankar", "shyam", "shyamal", "siddhartha", "siraj", "soham", "sohail", "somnath",
+    "sougata", "soumya", "soumyajit", "sourav", "souvik", "subal", "subhabrata",
+    "subhadip", "subham", "subhas", "subhash", "subhashis", "subir", "subodh", "subrata",
+    "sudhangshu", "sudhanshu", "sudhir", "sudip", "suhas", "sujan", "sujay", "sujit",
+    "sukanta", "sukhen", "sukomal", "suman", "sumanta", "sumit", "sunil", "suprabhat",
+    "supratim", "supratik", "surajit", "suresh", "surjeet", "surya", "suryakanta",
+    "swadhin", "swapan", "swarup", "swastik", "tamal", "tanmay", "tanmoy", "tanvir",
+    "tanveer", "tapan", "tapas", "tariq", "tarun", "tarunendra", "tathagata", "tirtha",
+    "tirthankar", "tridib", "tuhin", "uday", "ujjwal", "utpal", "uttam", "varun",
+    "vicky", "vijay", "vikas", "vikram", "vinay", "vipin", "vishal", "vivek", "wasim",
+    "waseem", "yasin", "yusuf", "zafar", "zahid", "zishan", "zubair"
 }
 
 DB_FEMALE = {
-    # Modern Diminutives & Pet Names
-    "ruby", "dolly", "pinky", "rinky", "sweety", "mary", "lily", "daisy", "simy",
-    "bobby", "munni", "baby", "tina", "rina", "mina", "sheena", "puja", "pooja",
-    "simi", "tannu", "tanu",
-
-    # Islamic Consonant & Classical Feminine Names
-    "zainab", "zaynab", "maryam", "mariam", "shabnam", "tabassum", "kulsum", "kalsum",
-    "nusrat", "ishrat", "nikhat", "ismat", "zeenat", "jannat", "nargis", "bilqis",
-    "firdaus", "afreen", "yasmin", "yasmine", "nasrin", "nasreen", "shirin", "parveen",
-    "parvin", "iram", "sanam", "fatima", "fatema", "ayesha", "khadija", "sultana",
-    "farhana", "roksana", "tanzila", "salma", "rehana", "shahana", "tasnim", "samina",
-    "tahmina", "razia", "asifa", "rabia", "sumaiya", "zoya", "bushra", "saima",
-    "shabana", "sanida", "afroza", "amina", "asma", "farida", "hasina", "israt",
-    "jahanara", "jamila", "julekha", "khaleda", "marina", "mashiura", "nafisa",
-    "nilufar", "rahela", "rokeya", "sabera", "sabina", "sadia", "sajeda", "saleha",
-    "sanjida", "shahnaz", "tarannum",
-
-    # Bengali Feminine Names
-    "moumita", "debapriya", "madhumita", "anindita", "paramita", "sarmistha", "sharmistha",
-    "piyali", "ruma", "chhanda", "sampa", "kakoli", "kakali", "baishakhi", "sucharita",
-    "monalisa", "titas", "swarnali", "barnali", "sayani", "soma", "rupali", "jhuma",
-    "mousumi", "tanusree", "tanushree", "subhashree", "debaleena", "indrani", "chaitali",
-    "basanti", "paoli", "payel", "rituparna", "bhaswati", "shrabani", "arati", "arundhati",
-    "sutapa", "bhabani", "bhagabati", "bharati", "bina", "binapani", "bipasha", "bithi",
-    "chandrani", "chinmoyee", "chitra", "damayanti", "debasree", "debika", "jharna",
-    "jhumur", "kadambari", "kalyani", "koli", "koyel", "kuntala", "lipika", "lopa",
-    "lopamudra", "madhabi", "madhabilata", "mahuya", "maitreyi", "malabika", "mamoni",
-    "manjusree", "mitali", "mithu", "mitra", "moly", "mou", "munmun", "pallabi",
-    "paromita", "piya", "pritikana", "rimpa", "romola", "rupashree", "samita", "sanchita",
-    "sanghamitra", "santwana", "sarama", "sayantani", "shampa", "shefali", "snigdha",
-    "sohini", "srabanti", "subarna", "suchandra", "suchitra", "sudeshna", "sukanya",
-    "sukla", "sulekha", "surobhita", "tarulata", "teesta", "tumpa", "utpala",
-
-    # Pan-Indian Feminine Names
-    "abantika", "avantika", "priya", "ananya", "sunita", "deepika", "kavita", "roshni",
-    "meera", "swati", "tanvi", "aaradhya", "shruti", "neha", "sneha", "aarti", "divya",
-    "anjali", "riya", "simran", "shreya", "payal", "komal", "pallavi", "radha", "seema",
-    "rekha", "geeta", "monika", "sonam", "preeti", "jyoti", "nisha", "rashmi", "mamta",
-    "sapna", "kajal", "vandana", "alka", "renu", "bhavna", "ishita", "sakshi", "kriti",
-    "shweta", "garima", "mansi", "mahima", "diksha", "deeksha", "prachi", "sheetal",
-    "akshta", "alafiya", "alankrita", "alia", "alifya", "alisha", "shameli", "aditi",
-    "amita", "anamika", "anita", "ankita", "annapurna", "anupama", "anuradha", "aparna",
-    "aradhana", "archana", "arpita", "arushi", "babita", "barkha", "bela", "chameli",
-    "champa", "chandana", "chandani", "deepa", "deepali", "dipti", "durga", "gargi",
-    "gautami", "gayatri", "geetanjali", "indira", "jaya", "jayati", "jayashree", "jyotsna",
-    "kamala", "kanan", "kanchan", "kanta", "kasturi", "kaushalya", "kripa", "krishnaa",
-    "kusum", "lakshmi", "latika", "leela", "madhuri", "malati", "mallika", "mamata",
-    "manasi", "mandira", "manisha", "manjari", "manju", "manjula", "mohini", "mona",
-    "moni", "naina", "namita", "nandini", "nandita", "neelam", "nikita", "nilanjana",
-    "nilima", "nirmala", "nupur", "padma", "paramita", "parbati", "poornima", "prabha",
-    "prativa", "pratima", "prerna", "priyanka", "purnima", "radhika", "ragini", "raima",
-    "rakhi", "rani", "ratna", "reba", "renuka", "resmi", "richa", "roma", "rupa",
-    "sabita", "sahana", "sandhya", "sangeeta", "sarada", "saraswati", "sarita", "saroj",
-    "sarojini", "shakuntala", "shanta", "shanti", "sharada", "sharmila", "sheela",
-    "shikha", "shipra", "shobha", "shubhra", "shyama", "smita", "sonali", "subhadra",
-    "sudha", "sujata", "sumana", "sumati", "sumita", "sumitra", "sunanda", "sunayana",
-    "suparna", "supriti", "supriya", "surabhi", "suruchi", "sushama", "sushila",
-    "sushmita", "swapna", "sweta", "tania", "tapasya", "tara", "trisha", "uma",
-    "urmila", "usha", "vaishali", "varsha", "vidya", "vinita"
+    "aarti", "abantika", "aditi", "afreen", "afroza", "ahati", "ahona", "aindrila",
+    "akshta", "alafiya", "alankrita", "alia", "alifya", "alisha", "alka", "alpona",
+    "amina", "amita", "amrita", "anamika", "ananya", "anindita", "anirupa", "anita",
+    "anjali", "ankita", "ankuta", "annapurna", "antara", "antra", "anua", "anupallavi",
+    "anupama", "anuradha", "anushka", "anuska", "anushree", "aparajita", "aparna",
+    "aradhana", "arati", "archana", "aritri", "arpita", "arundhati", "arushi", "asha",
+    "ashima", "asifa", "asma", "atreyee", "auswa", "avantika", "ayanika", "ayesha",
+    "babita", "baby", "baishakhi", "barkha", "barnali", "basanti", "bela", "bhabani",
+    "bhagabati", "bharati", "bhaswati", "bhavna", "bina", "binapani", "binita", "bipasha",
+    "bithi", "bobby", "bohnisikha", "bushra", "chaitali", "chaitaly", "chaitaty", "chameli",
+    "champa", "chandana", "chandani", "chandrani", "chhanda", "chinmoyee", "chitra",
+    "daisy", "damayanti", "debaleena", "debapriya", "debasree", "debika", "deeksha",
+    "deepa", "deepali", "deepika", "diksha", "dipti", "divya", "dolly", "durga",
+    "farhana", "farida", "fatema", "fatima", "firdaus", "gargi", "garima", "gautami",
+    "gayatri", "geeta", "geetanjali", "hasina", "indira", "indrani", "iram", "ishita",
+    "ishrat", "ismat", "israt", "jahanara", "jamila", "jannat", "jaya", "jayati",
+    "jayashree", "jharna", "jhuma", "jhumur", "julekha", "jyoti", "jyotsna", "kadambari",
+    "kajal", "kakali", "kakoli", "kalpana", "kalyani", "kamala", "kanan", "kanchan",
+    "kanta", "kalsum", "kasturi", "kaushalya", "kavita", "khadija", "khaleda", "koli",
+    "komal", "koyel", "kripa", "krishnaa", "kriti", "kulsum", "kuntala", "kusum",
+    "lakshmi", "latika", "leela", "lily", "lipika", "lopa", "lopamudra", "madhabi",
+    "madhabilata", "madhumita", "madhuri", "mahima", "mahuya", "maitreyi", "malabika",
+    "malati", "mallika", "mamata", "mamoni", "mamta", "manasi", "mandira", "manisha",
+    "manjari", "manju", "manjula", "manjusree", "mansi", "mariam", "marina", "mary",
+    "maryam", "mashiura", "meera", "mina", "mitali", "mithu", "mitra", "mohini",
+    "moly", "mona", "monalisa", "moni", "monika", "mou", "moumita", "mousumi", "munmun",
+    "munni", "nafisa", "naina", "namita", "nandini", "nandita", "nargis", "nasreen",
+    "nasrin", "neelam", "neha", "nikhat", "nikita", "nilanjana", "nilima", "nilufar",
+    "nirmala", "nisha", "nupur", "nusrat", "padma", "pallabi", "pallavi", "paoli",
+    "paramita", "parbati", "paromita", "parveen", "parvin", "payal", "payel", "pinky",
+    "piya", "piyali", "poli", "pooja", "poornima", "prabha", "prachi", "prativa",
+    "pratima", "preeti", "prerna", "pritikana", "priya", "priyanka", "puja", "purnima",
+    "rabia", "radha", "radhika", "ragini", "rahela", "raima", "rakhi", "rani",
+    "rashmi", "ratna", "razia", "reba", "rehana", "rekha", "renu", "renuka", "resmi",
+    "richa", "rimpa", "rina", "rinki", "rituparna", "riya", "rokeya", "roksana",
+    "roma", "romola", "roshni", "ruby", "ruma", "rupa", "rupali", "rupashree", "sabera",
+    "sabina", "sabita", "sadia", "sahana", "saima", "sajeda", "sakshi", "saleha",
+    "salma", "samina", "samita", "sampa", "sanam", "sanchita", "sandhya", "sangeeta",
+    "sanghamitra", "sanida", "sanjida", "santwana", "sapna", "sarada", "sarama",
+    "saraswati", "sarita", "sarmistha", "saroj", "sarojini", "sayani", "sayantani",
+    "seema", "shabana", "shabnam", "shahana", "shahnaz", "shakuntala", "shameli",
+    "shampa", "shanta", "shanti", "sharada", "sharmila", "sharmistha", "sharmista",
+    "sheela", "sheena", "sheetal", "shefali", "shikha", "shipra", "shirin", "shobha",
+    "shrabani", "shrestha", "shreya", "shruti", "shubhra", "shweta", "shyama", "simi",
+    "simran", "simy", "smita", "sneha", "snigdha", "sohini", "soma", "sonali", "sonam",
+    "srabanti", "subarna", "subhadra", "subhashree", "suchandra", "sucharita", "suchitra",
+    "sudeshna", "sudha", "sujata", "sukanya", "sukla", "sulekha", "sultana", "suman",
+    "sumana", "sumati", "sumita", "sumitra", "sumaiya", "sunanda", "sunayana", "sunita",
+    "suparna", "supriti", "supriya", "surabhi", "surobhita", "suruchi", "sushama",
+    "sushila", "sushmita", "sutapa", "swapna", "swarnali", "swati", "sweety", "sweta",
+    "tabassum", "tahmina", "tania", "tannu", "tanu", "tanushree", "tanusree", "tanvi",
+    "tanzila", "tapasya", "tara", "tarannum", "tarulata", "tasnim", "teesta", "tina",
+    "titas", "trisha", "tumpa", "tusi", "uma", "urmila", "usha", "utpala", "vaishali",
+    "vandana", "varsha", "vidya", "vinita", "yasmin", "yasmine", "zainab", "zaynab",
+    "zeenat", "zoya"
 }
 
 # ==========================================
@@ -185,23 +197,13 @@ def load_gist_datasets():
         except Exception as e:
             print(f"Skipping external sync from {url}: {e}")
 
-    # Remove overlapping names to avoid ambiguity
+    # Remove overlapping names to eliminate ambiguity
     conflicts = DB_MALE.intersection(DB_FEMALE)
     DB_MALE -= conflicts
     DB_FEMALE -= conflicts
 
-    # Permanent High-Priority overrides
-    DB_MALE.update([
-        "ali", "imran", "ilyas", "abhijeet", "abhijit", "abhirup", "abhishek", 
-        "subrata", "debabrata", "soumya", "joy", "tanmoy", "chinmoy", "diptesh", "krishna"
-    ])
-    DB_FEMALE.update([
-        "zainab", "zaynab", "ruby", "dolly", "pinky", "maryam", "shabnam", "tabassum", 
-        "nusrat", "zeenat", "jannat", "afreen", "yasmin", "nasrin", "parveen"
-    ])
-
 # ==========================================
-# 4. MORPHOLOGICAL RULES (STRICT DICHOTOMY)
+# 4. MORPHOLOGICAL RULES (MALE / FEMALE ONLY)
 # ==========================================
 
 MALE_PREFIXES = ("abdul", "mohd", "mohammad", "muhammad", "md", "sk", "sheikh", "syed", "ghulam", "ali")
@@ -241,12 +243,12 @@ def evaluate_gender(raw_name: str) -> str:
     if not token:
         return "Male"
 
-    # Step 1: Check Female Honorifics/Surnames across ALL tokens first (High Priority)
+    # Step 1: Check Female Honorifics / Surnames across ALL tokens first (High Priority)
     for t in tokens:
         if t in FEMALE_TOKENS:
             return "Female"
 
-    # Step 2: Check Male Surnames/Titles across ALL tokens
+    # Step 2: Check Male Surnames / Titles across ALL tokens
     for t in tokens:
         if t in MALE_TOKENS:
             return "Male"
@@ -285,7 +287,7 @@ def evaluate_gender(raw_name: str) -> str:
     if token.endswith(("i", "ee", "aa")):
         return "Female"
 
-    # Fallback: Default to Male (Eliminates "Unisex" / "Unknown")
+    # Strictly Binary Fallback: Default to Male
     return "Male"
 
 # ==========================================
