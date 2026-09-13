@@ -13,7 +13,8 @@ app = FastAPI(title="Indic & Bengali Enterprise Gender Engine")
 
 FEMALE_TOKENS = {
     "devi", "kumari", "khatun", "khatoon", "bibi", "begum", "banu", "bano", 
-    "ara", "parvin", "nisa", "unissa", "nesa", "bai", "dasi", "mahila", "khatunbibi"
+    "ara", "parvin", "nisa", "unissa", "nesa", "bai", "dasi", "mahila", 
+    "khatunbibi", "sultana", "begam", "jahan"
 }
 
 MALE_EXCLUSIVE_TOKENS = {
@@ -26,7 +27,6 @@ MALE_EXCLUSIVE_TOKENS = {
 # ==========================================
 
 DB_MALE = {
-    # Names from the latest feedback
     "gauranga", "surja", "mani", "sabasachi", "sabyasachi", "parsanta", "saugata",
     "hari", "rajarshi", "sunny", "banty", "bharat", "susanta", "arkaprava",
     "bubai", "roni", "naveen", "anthony", "bapi", "sushanta", "kanhaiya", "raja",
@@ -48,13 +48,13 @@ DB_MALE = {
     "banibrata", "bappa", "bappaditya", "barun", "basudev", "bhabesh", "bhola", "bibhas",
     "bidhan", "bijan", "bijoy", "bikas", "bikash", "bikram", "bilal", "binod", "binoy",
     "biplab", "bipul", "biren", "bireswar", "biresh", "biswajit", "biswanath", "bratin",
-    "buddhadeb", "bulbul", "chaitanya", "champak", "chandan", "chandi", "chandra",
-    "chandranath", "chayan", "chinmay", "chinmoy", "chittaranjan", "dawood", "debabrata",
+    "buddhadeb", "bulbul", "chaitanya", "champak", "chandan", "chandi", "chandranath", 
+    "chayan", "chinmay", "chinmoy", "chittaranjan", "dawood", "debabrata",
     "debal", "debasish", "debayan", "debbrata", "debdatta", "debendra", "debjit",
     "debrata", "debrup", "deep", "deepak", "dhiman", "dhiraj", "dibyendu", "dilip",
     "dinesh", "dipak", "dipankar", "dipen", "diptesh", "dulal", "elias", "farhan",
     "farooq", "fazle", "firoz", "gadadhar", "gagan", "ganesh", "gaurav", "gautam",
-    "gobinda", "gopal", "gourab", "gouranga", "govind", "habib", "hafiz", "haider",
+    "gobinda", "gopal", "gourab", "govind", "habib", "hafiz", "haider",
     "haradhan", "haridas", "harihar", "harjeet", "hasan", "hassan", "himadri", "himangshu",
     "himanshu", "hiranmoy", "hussain", "ibrahim", "ilyas", "imran", "imtiaz", "indrajit",
     "indrajeet", "indranil", "iqbal", "irfan", "ismail", "jahangir", "jalal", "jamal",
@@ -73,7 +73,7 @@ DB_MALE = {
     "prabir", "pradip", "pradyut", "prakash", "pramod", "pranab", "pranay", "prasenjit",
     "prateek", "pratik", "pratul", "prem", "pritom", "priyabrata", "prokash", "proloy",
     "prono", "pronob", "prosenjit", "pujit", "pulak", "pulin", "purnendu", "purushottam",
-    "rabin", "rabindra", "radha", "radhakanta", "radheshyam", "raghab", "raghunath",
+    "rabin", "rabindra", "radhakanta", "radheshyam", "raghab", "raghunath",
     "rahim", "rahman", "rahul", "rajat", "rajdip", "rajeev", "rajendra", "rajesh",
     "rajib", "rakesh", "ram", "ramaprasad", "ramkrishna", "ramprasad", "rana", "ranabir",
     "ranajit", "ranen", "ranendra", "ranjeet", "rashid", "ratan", "ratin", "ravi",
@@ -101,6 +101,13 @@ DB_MALE = {
 }
 
 DB_FEMALE = {
+    # Names specifically fixed from latest sheet
+    "sath", "sathi", "tithe", "chhaya", "dulu", "kiran", "shaheen", "poonam",
+    "vrinda", "naheed", "putul", "sudipta", "papiya", "tabinda", "june",
+    "ritu", "radha", "saranya", "rupal", "rikhiya", "tuku", "chandra", "siya",
+    "swagata", "mumtaz", "mehnaz", "pratibha", "venus", "taniya", "mohar",
+    "manmun", "raziya", "sultana",
+
     "aarti", "abantika", "aditi", "afreen", "afroza", "ahati", "ahona", "aindrila",
     "akshta", "alafiya", "alankrita", "alia", "alifya", "alisha", "alka", "alpona",
     "amina", "amita", "amrita", "anamika", "ananya", "anindita", "anirupa", "anita",
@@ -133,7 +140,7 @@ DB_FEMALE = {
     "paramita", "parbati", "paromita", "parveen", "payal", "payel", "pinky", "pinkey",
     "piya", "piyali", "poli", "pooja", "puja", "poornima", "prabha", "prachi", "prativa",
     "pratima", "preeti", "prerna", "pritikana", "priya", "priyanka", "purnima",
-    "rabia", "radhika", "ragini", "rahela", "raima", "rakhi", "rashmi", "ratna",
+    "rabia", "radhika", "ragini", "rahela", "raima", "rakhi", "rani", "rashmi", "ratna",
     "razia", "reba", "rehana", "rekha", "renu", "renuka", "resmi", "richa", "rimpa",
     "rina", "rinki", "rituparna", "riya", "rokeya", "roksana", "roma", "romola",
     "roshni", "ruby", "ruma", "rupa", "rupali", "rupashree", "sabera", "sabina",
@@ -201,22 +208,20 @@ def load_gist_datasets():
 
 MALE_PREFIXES = ("abdul", "mohd", "mohammad", "muhammad", "md", "sk", "sheikh", "syed", "ghulam", "ali")
 
-# Specific masculine suffixes (checked first)
 MALE_SUFFIXES = (
     "jeet", "jit", "joy", "rup", "brata", "kanta", "kanti", "sekhar", "shekhar",
-    "moy", "shis", "shish", "esh", "kant", "anand", "dev", "deb", "dhar", "pal",
-    "nav", "veer", "ul", "it", "ik", "ak", "av", "am", "sh", "ay", "ab", "ban",
-    "ron", "ran", "oy", "ey", "arat", "veen", "anthony", "anta", "anto", "prava",
-    "rshi", "sachi"
+    "moy", "shis", "shish", "esh", "kant", "anand", "dev", "deb", "dhar",
+    "nav", "veer", "ul", "ik", "av", "ban", "ron", "oy", "ey", "arat",
+    "anthony", "prava", "rshi", "sachi"
 )
 
-# Refined female suffixes (ambiguous -rat and -veen removed)
 FEMALE_SUFFIXES = (
     "wati", "vati", "mati", "mita", "tika", "ika", "ita", "isha", "priya",
     "shree", "sri", "lata", "mala", "bala", "dita", "purna", "lekha", "shila",
-    "rekha", "nita", "jani", "shikha", "rupa", "dharini",
-    "nandini", "sundari", "nab", "eena", "ina", "usrat", "shrat", "khat", "smat",
-    "enat", "nnat", "nam", "sum", "yeen", "reen", "min", "rin", "qis", "gis"
+    "rekha", "nita", "jani", "shikha", "rupa", "dharini", "nandini", "sundari",
+    "nab", "eena", "ina", "usrat", "shrat", "khat", "smat", "enat", "nnat",
+    "nam", "sum", "yeen", "reen", "min", "rin", "qis", "gis", "heen", "heed",
+    "taz", "naz", "pal", "tul", "har", "mun"
 )
 
 HONORIFIC_REGEX = r'^(mr|mrs|ms|dr|shri|smt|miss|prof|master)\.?\s+'
@@ -239,7 +244,7 @@ def evaluate_gender(raw_name: str) -> str:
     if not token:
         return "Male"
 
-    # Step 1: Check Female Explicit Honorifics (Kumari, Devi, Khatun, Bibi) across full name
+    # Step 1: Check Female Explicit Honorifics / Titles across full name (Kumari, Devi, Khatun, Sultana)
     for t in tokens:
         if t in FEMALE_TOKENS:
             return "Female"
@@ -255,29 +260,29 @@ def evaluate_gender(raw_name: str) -> str:
         if t in MALE_EXCLUSIVE_TOKENS:
             return "Male"
 
-    # Step 4: Prefix Check on First Name (Abdul, Ali, Sk, Md)
+    # Step 4: Prefix Check on First Name
     for pref in MALE_PREFIXES:
         if token.startswith(pref):
             return "Male"
 
-    # Step 5: Male Suffixes Check (Preserves Bharat, Naveen, Susanta, Sabyasachi)
-    for sfx in MALE_SUFFIXES:
-        if token.endswith(sfx):
-            return "Male"
-
-    # Step 6: Female Suffixes Check
+    # Step 5: Check Female Suffixes
     for sfx in FEMALE_SUFFIXES:
         if token.endswith(sfx):
             return "Female"
 
-    # Step 7: Sanskrit / Bengali Conjunct Endings with -a (Masculine like Gauranga, Surja)
+    # Step 6: Check Male Suffixes
+    for sfx in MALE_SUFFIXES:
+        if token.endswith(sfx):
+            return "Male"
+
+    # Step 7: Sanskrit Masculine Conjuncts ending in -a (Safeguard feminine -a names)
     if token.endswith("a"):
-        if re.search(r'(rta|bha|nya|tya|rka|nda|mba|rya|pta|tra|dra|ndra|nga|rja|nta|gata|prava|iya|aya|aja)$', token):
+        if re.search(r'(rta|nya|tya|rka|nda|mba|rya|tra|dra|ndra|ranga|prava)$', token):
             return "Male"
         return "Female"
 
-    # Step 8: Terminal Vowels (Default to Female unless matched earlier)
-    if token.endswith(("i", "ee", "aa")):
+    # Step 8: Terminal Vowels typical to feminine Indian names (-i, -u, -ee, -aa)
+    if token.endswith(("i", "u", "ee", "aa")):
         return "Female"
 
     # Step 9: Anglo-Indian Pet Names (-y)
