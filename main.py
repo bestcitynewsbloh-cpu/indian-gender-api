@@ -7,6 +7,24 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 model = None
+
+# 1. High-precision curated lookup for common Indian names
+FEMALE_NAMES = {
+    "pooja", "priya", "ananya", "sunita", "deepika", "kavita", "roshni", "meera",
+    "swati", "tanvi", "aaradhya", "shruti", "neha", "sneha", "aarti", "divya",
+    "anjali", "riya", "simran", "shreya", "payal", "komal", "pallavi", "radha",
+    "seema", "rekha", "geeta", "monika", "sonam", "preeti", "jyoti", "nisha",
+    "rashmi", "mamta", "sapna", "kajal", "vandana", "alka", "renu", "bhavna"
+}
+
+MALE_NAMES = {
+    "rahul", "amit", "rajesh", "suresh", "vikram", "rohan", "arjun", "sachin",
+    "prateek", "diptesh", "krishna", "gaurav", "manoj", "vijay", "ajay", "sanjay",
+    "anil", "sunil", "deepak", "rakesh", "ashok", "dinesh", "pankaj", "mukesh",
+    "alok", "vivek", "abhishek", "varun", "kunal", "sumit", "sourabh", "imran",
+    "rohit", "aman", "ankit", "mohit", "vicky", "nitin", "mayank", "ravi"
+}
+
 UNISEX_NAMES = {
     "kiran", "deep", "harpreet", "gurpreet", "jaspreet",
     "manpreet", "amrit", "snehal", "sonu", "shashi"
@@ -49,6 +67,7 @@ def predict(req: PredictRequest):
     if not token:
         raise HTTPException(status_code=400, detail="Invalid name")
 
+    # Layer 1: Unisex check
     if token in UNISEX_NAMES:
         return {
             "input": req.name,
@@ -59,6 +78,28 @@ def predict(req: PredictRequest):
             "reason": "Commonly used for both genders in Indian culture"
         }
 
+    # Layer 2: Direct lookup for deterministic accuracy
+    if token in FEMALE_NAMES:
+        return {
+            "input": req.name,
+            "first_name": token,
+            "gender": "Female",
+            "confidence": 0.99,
+            "probabilities": {"Male": 0.01, "Female": 0.99},
+            "reason": "Dictionary verified"
+        }
+
+    if token in MALE_NAMES:
+        return {
+            "input": req.name,
+            "first_name": token,
+            "gender": "Male",
+            "confidence": 0.99,
+            "probabilities": {"Male": 0.99, "Female": 0.01},
+            "reason": "Dictionary verified"
+        }
+
+    # Layer 3: ML Model Fallback for unseen names
     if model is None:
         raise HTTPException(status_code=500, detail="Model file missing")
 
@@ -76,5 +117,5 @@ def predict(req: PredictRequest):
         "gender": pred if top_conf >= 0.65 else "Uncertain",
         "confidence": round(top_conf, 3),
         "probabilities": {"Male": round(male_p, 3), "Female": round(female_p, 3)},
-        "reason": None
+        "reason": "ML pattern inference"
     }
