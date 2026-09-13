@@ -1,69 +1,134 @@
-import os
 import re
-import urllib.request
 from typing import List
 from fastapi import FastAPI
 from pydantic import BaseModel
 
 app = FastAPI(title="Production Indic & Bengali 50K Gender Engine")
 
-DB_MALE = set()
-DB_FEMALE = set()
+# ==========================================
+# 1. CORE INDIAN, BENGALI & ISLAMIC CORPUS
+# ==========================================
 
-# Server start hone par 50,000+ names seedha official raw datasets se RAM me load honge
-@app.on_event("startup")
-def load_datasets():
-    global DB_MALE, DB_FEMALE
-    print("Loading 50,000+ Indic names from open-source datasets...")
+DB_MALE = {
+    # Bengali male names (including tricky -a / -o endings)
+    "abhinaba", "abhinob", "subrata", "debabrata", "satyabrata", "soumya", "sukanta",
+    "shantanu", "santanab", "tanmoy", "chinmoy", "mrinal", "arka", "rana", "anupam",
+    "pranab", "biplab", "sourav", "saurav", "anirban", "indranil", "nilanjan", "partha",
+    "sukomal", "dipankar", "subhas", "subhash", "kalyan", "prosenjit", "prasenjit",
+    "subhashis", "debjit", "tathagata", "saptarshi", "buddhadeb", "debashis", "ashis",
+    "avisek", "avishek", "shouvik", "souvik", "supratim", "debrup", "shubhankar",
+    "tamal", "kallol", "somnath", "abhijit", "abhijoy", "abhinav", "abhinesh", "abhirup",
+    "abhishek", "joy", "bijoy", "sanjay", "ajay", "sujay", "ranajit", "biswajit", "arijit",
+    "bappa", "barun", "basudev", "bhabesh", "bhola", "bibhas", "bidhan", "bikash",
+    "bikram", "binod", "binoy", "biren", "chandan", "chayan", "chittaranjan", "dhiman",
+    "dilip", "dipak", "dulal", "haradhan", "jayanta", "koustav", "mainak", "manas",
+    "manik", "mithun", "monir", "mousam", "niloy", "nirmal", "paresh", "pinaki", "prabhat",
+    "prabir", "pradip", "pramod", "pritom", "purnendu", "rabin", "rajat", "rajib", "ritam",
+    "saikat", "samar", "samrat", "sandip", "sanjoy", "sankar", "santu", "satyajit",
+    "shankha", "shashank", "shirish", "siddhartha", "soham", "sougata", "soumyajit",
+    "subal", "subhabrata", "subhadip", "subham", "subir", "subodh", "suhas", "sujan",
+    "sukhen", "suman", "surajit", "surya", "swapan", "swarup", "tanmay", "tapan",
+    "tapas", "tarun", "tuhin", "uday", "ujjwal", "utpal", "uttam",
 
-    sources = [
-        "https://raw.githubusercontent.com/anilbhatt1/Indian-Names-Dataset/master/Names_2010Census.csv",
-        "https://raw.githubusercontent.com/amrrs/indian-names-gender/master/Indian-Names-Dataset-Gender.csv"
-    ]
+    # Islamic Male Names (Compound / Arabic / Urdu)
+    "ali", "hussain", "hasan", "hassan", "ahsan", "mohammed", "mohammad", "muhammad",
+    "ahmed", "ahmad", "tariq", "rashid", "arif", "shahid", "zahid", "waseem", "wasim",
+    "nadeem", "mustafa", "murtaza", "saif", "aslam", "farhan", "salman", "rizwan",
+    "altaf", "iqbal", "firoz", "tanvir", "tanveer", "ilyas", "elias", "imran", "irfan",
+    "azhar", "akhtar", "sajid", "shakir", "samir", "sameer", "rehan", "sohail", "suhail",
+    "afzal", "parvez", "shahnawaz", "shahbaz", "naim", "naeem", "javed", "babar", "bilal",
+    "abu", "akbar", "akram", "alauddin", "alishah", "amjad", "asad", "asif", "atik",
+    "dawood", "farooq", "fazle", "habib", "hafiz", "haider", "ibrahim", "imtiaz", "ismail",
+    "jahangir", "jalal", "jamal", "kabir", "mansoor", "masud", "motiur", "mubarak",
+    "murshid", "mushtaq", "nasir", "nazir", "nur", "rahim", "rahman", "reza", "riaz",
+    "riyaz", "saddam", "salim", "sarfaraz", "sayed", "sayeed", "selim", "shabbir",
+    "shahrukh", "shams", "shaukat", "siraj", "yasin", "yusuf", "zafar", "zishan", "zubair",
 
-    for url in sources:
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                lines = resp.read().decode("utf-8", errors="ignore").splitlines()
-                for line in lines:
-                    parts = line.strip().split(",")
-                    if len(parts) >= 2:
-                        raw_nm = re.sub(r'[^a-z]', '', parts[0].strip().lower())
-                        raw_g = parts[1].strip().lower()
-                        if len(raw_nm) < 2:
-                            continue
-                        if raw_g in ["m", "male", "boy"]:
-                            DB_MALE.add(raw_nm)
-                        elif raw_g in ["f", "female", "girl"]:
-                            DB_FEMALE.add(raw_nm)
-        except Exception as e:
-            print(f"Error fetching {url}: {e}")
+    # Pan-Indian Male Names
+    "aayush", "ayush", "abdul", "abdhesh", "avdhesh", "rahul", "amit", "rajesh", "suresh",
+    "vikram", "rohan", "arjun", "sachin", "prateek", "diptesh", "krishna", "gaurav",
+    "manoj", "vijay", "anil", "sunil", "deepak", "rakesh", "ashok", "dinesh", "pankaj",
+    "mukesh", "alok", "vivek", "varun", "kunal", "sumit", "sourabh", "saurabh", "rohit",
+    "aman", "ankit", "mohit", "vicky", "nitin", "mayank", "ravi", "ram", "sham", "shyam",
+    "amar", "amal", "akshay", "akshit", "alkesh", "aditya", "akash", "anand", "animesh",
+    "arun", "badal", "bahadur", "debendra", "gautam", "gopal", "govind", "himanshu",
+    "kamal", "karan", "karthik", "kaushik", "keshav", "lakshman", "madhav", "manish",
+    "mukund", "munna", "naresh", "nayan", "nilesh", "piyush", "prakash", "pratik",
+    "prem", "rajeev", "rajendra", "ratan", "ronit", "sagar", "sandeep", "satish",
+    "shakti", "shambhu", "shekhar", "shivam", "shreyas", "shubham", "vinay", "vipin", "vishal"
+}
 
-    # Conflicts resolve karein
-    conflicts = DB_MALE.intersection(DB_FEMALE)
-    DB_MALE -= conflicts
-    DB_FEMALE -= conflicts
+DB_FEMALE = {
+    # Modern / Anglo / Pet names ending in -y
+    "ruby", "dolly", "pinky", "rinky", "sweety", "mary", "lily", "daisy", "simy",
+    "bobby", "munni", "baby", "tina", "rina", "mina", "sheena", "puja", "pooja",
+    "simi", "tannu", "tanu",
 
-    # High-Priority Bengali & Islamic Core additions
-    DB_FEMALE.update([
-        "zainab", "zaynab", "ruby", "dolly", "pinky", "rinky", "sweety", "maryam", 
-        "mariam", "shabnam", "tabassum", "kulsum", "kalsum", "nusrat", "ishrat", 
-        "nikhat", "ismat", "zeenat", "jannat", "nargis", "bilqis", "firdaus", 
-        "afreen", "yasmin", "nasrin", "shirin", "parveen", "iram", "sanam",
-        "akshta", "alafiya", "alankrita", "alia", "alifya", "alisha", "shameli"
-    ])
-    DB_MALE.update([
-        "ali", "imran", "ilyas", "sham", "ram", "abhinaba", "abhinob", "abhirup", 
-        "soumya", "subrata", "debabrata", "joy", "tanmoy", "chinmoy", "diptesh", 
-        "krishna", "alauddin", "alishah", "alkesh"
-    ])
-    print(f"Dataset Loaded Successfully! Male: {len(DB_MALE)}, Female: {len(DB_FEMALE)}")
+    # Tricky Islamic Female Names (Consonant endings: -b, -t, -m, -n, -s)
+    "zainab", "zaynab", "maryam", "mariam", "shabnam", "tabassum", "kulsum", "kalsum",
+    "nusrat", "ishrat", "nikhat", "ismat", "zeenat", "jannat", "nargis", "bilqis",
+    "firdaus", "afreen", "yasmin", "yasmine", "nasrin", "nasreen", "shirin", "parveen",
+    "parvin", "iram", "sanam", "fatima", "fatema", "ayesha", "khadija", "sultana",
+    "farhana", "roksana", "tanzila", "salma", "rehana", "shahana", "tasnim", "samina",
+    "tahmina", "razia", "asifa", "rabia", "sumaiya", "zoya", "bushra", "saima",
+    "shabana", "sanida", "afroza", "amina", "asma", "farida", "hasina", "israt",
+    "jahanara", "jamila", "julekha", "khaleda", "marina", "mashiura", "nafisa",
+    "nilufar", "rahela", "rokeya", "sabera", "sabina", "sadia", "sajeda", "saleha",
+    "sanjida", "shahnaz", "tarannum",
 
-# Linguistic Fallbacks
+    # Bengali Female Names
+    "moumita", "debapriya", "madhumita", "anindita", "paramita", "sarmistha", "sharmistha",
+    "piyali", "ruma", "chhanda", "sampa", "kakoli", "kakali", "baishakhi", "sucharita",
+    "monalisa", "titas", "swarnali", "barnali", "sayani", "soma", "rupali", "jhuma",
+    "mousumi", "tanusree", "tanushree", "subhashree", "debaleena", "indrani", "chaitali",
+    "basanti", "paoli", "payel", "rituparna", "bhaswati", "shrabani", "arati", "arundhati",
+    "sutapa", "bhabani", "bhagabati", "bharati", "bina", "binapani", "bipasha", "bithi",
+    "chandrani", "chinmoyee", "chitra", "damayanti", "debasree", "debika", "jharna",
+    "jhumur", "kadambari", "kalyani", "koli", "koyel", "kuntala", "lipika", "lopa",
+    "lopamudra", "madhabi", "madhabilata", "mahuya", "maitreyi", "malabika", "mamoni",
+    "manjusree", "mitali", "mithu", "mitra", "moly", "mou", "munmun", "pallabi",
+    "paromita", "piya", "pritikana", "rimpa", "romola", "rupashree", "samita", "sanchita",
+    "sanghamitra", "santwana", "sarama", "sayantani", "shampa", "shefali", "snigdha",
+    "sohini", "srabanti", "subarna", "suchandra", "suchitra", "sudeshna", "sukanya",
+    "sukla", "sulekha", "surobhita", "tarulata", "teesta", "tumpa", "utpala",
+
+    # Pan-Indian Female Names
+    "abantika", "avantika", "priya", "ananya", "sunita", "deepika", "kavita", "roshni",
+    "meera", "swati", "tanvi", "aaradhya", "shruti", "neha", "sneha", "aarti", "divya",
+    "anjali", "riya", "simran", "shreya", "payal", "komal", "pallavi", "radha", "seema",
+    "rekha", "geeta", "monika", "sonam", "preeti", "jyoti", "nisha", "rashmi", "mamta",
+    "sapna", "kajal", "vandana", "alka", "renu", "bhavna", "ishita", "sakshi", "kriti",
+    "shweta", "garima", "mansi", "mahima", "diksha", "deeksha", "prachi", "sheetal",
+    "akshta", "alafiya", "alankrita", "alia", "alifya", "alisha", "shameli", "aditi",
+    "amita", "anamika", "anita", "ankita", "annapurna", "anupama", "anuradha", "aparna",
+    "aradhana", "archana", "arpita", "arushi", "babita", "barkha", "bela", "chameli",
+    "champa", "chandana", "chandani", "deepa", "deepali", "dipti", "durga", "gargi",
+    "gautami", "gayatri", "geetanjali", "indira", "jaya", "jayati", "jayashree", "jyotsna",
+    "kamala", "kanan", "kanchan", "kanta", "kasturi", "kaushalya", "kripa", "krishnaa",
+    "kusum", "lakshmi", "latika", "leela", "madhuri", "malati", "mallika", "mamata",
+    "manasi", "mandira", "manisha", "manjari", "manju", "manjula", "mohini", "mona",
+    "moni", "naina", "namita", "nandini", "nandita", "neelam", "nikita", "nilanjana",
+    "nilima", "nirmala", "nupur", "padma", "paramita", "parbati", "poornima", "prabha",
+    "prativa", "pratima", "prerna", "priyanka", "purnima", "radhika", "ragini", "raima",
+    "rakhi", "rani", "ratna", "reba", "renuka", "resmi", "richa", "roma", "rupa",
+    "sabita", "sahana", "sakshi", "sandhya", "sangeeta", "sapna", "sarada", "saraswati",
+    "sarita", "saroj", "sarojini", "shakuntala", "shanta", "shanti", "sharada", "sharmila",
+    "sheela", "shikha", "shipra", "shobha", "shubhra", "shyama", "smita", "sonali",
+    "subhadra", "sudha", "sujata", "sumana", "sumati", "sumita", "sumitra", "sunanda",
+    "sunayana", "suparna", "supriti", "supriya", "surabhi", "suruchi", "sushama",
+    "sushila", "sushmita", "swapna", "sweta", "tania", "tapasya", "tara", "trisha",
+    "uma", "urmila", "usha", "vaishali", "varsha", "vidya", "vinita"
+}
+
+# ==========================================
+# 2. DETERMINISTIC HEURISTIC RULES
+# ==========================================
+
 FEMALE_TOKENS = {"devi", "kumari", "khatun", "bibi", "begum", "banu", "ara", "parveen", "nisa", "unissa"}
 MALE_TOKENS = {"kumar", "chandra", "nath", "prasad", "das", "singh", "lal", "babu", "da", "uddin", "ullah"}
 MALE_PREFIXES = ("abdul", "mohd", "mohammad", "muhammad", "md", "sk", "sheikh", "syed", "ghulam", "ali")
+
+# Specific Feminine Endings (covers Bengali, Vedic, Arabic, Persian)
 FEMALE_SUFFIXES = (
     "wati", "vati", "mati", "mita", "tika", "ika", "ita", "isha", "priya", 
     "shree", "sri", "lata", "mala", "bala", "dita", "purna", "lekha", "shila", 
@@ -71,12 +136,15 @@ FEMALE_SUFFIXES = (
     "nandini", "sundari", "nab", "eena", "ina", "eet", "rat", "hat", "mat", 
     "nam", "sum", "yeen", "veen", "reen", "min", "rin", "qis", "gis"
 )
+
+# Specific Masculine Endings
 MALE_SUFFIXES = (
     "jit", "jeet", "joy", "rup", "brata", "kanta", "kanti", "sekhar", "shekhar", 
     "moy", "shis", "shish", "esh", "kant", "anand", "dev", "deb", "dhar", "pal", 
     "nav", "veer", "ul", "it", "ik", "ak", "av", "am", "sh", "ay", "ab", "ban", 
     "ron", "ran", "oy", "ey"
 )
+
 HONORIFIC_REGEX = r'^(mr|mrs|ms|dr|shri|smt|miss|prof|master)\.?\s+'
 
 class PredictRequest(BaseModel):
@@ -97,21 +165,25 @@ def evaluate_gender(raw_name: str) -> str:
     if not token:
         return "Unknown"
 
+    # Step 1: Middle/Last honorific token match
     for t in tokens:
         if t in FEMALE_TOKENS:
             return "Female"
         if t in MALE_TOKENS:
             return "Male"
 
+    # Step 2: Instant Master Database Match (O(1))
     if token in DB_FEMALE:
         return "Female"
     if token in DB_MALE:
         return "Male"
 
+    # Step 3: Prefix Matches (Abdul, Ali, Sk, Md)
     for pref in MALE_PREFIXES:
         if token.startswith(pref):
             return "Male"
 
+    # Step 4: Linguistic Morphological Suffixes
     for sfx in FEMALE_SUFFIXES:
         if token.endswith(sfx):
             return "Female"
@@ -119,25 +191,34 @@ def evaluate_gender(raw_name: str) -> str:
         if token.endswith(sfx):
             return "Male"
 
+    # Step 5: Anglo/Diminutive Suffix (-y)
     if token.endswith("y") and not token.endswith(("oy", "ay", "ey")):
         return "Female"
 
+    # Step 6: Bengali Sanskrit Conjunct terminal (-a)
     if token.endswith("a"):
         if re.search(r'(rta|bha|nya|tya|rka|nda|mba|rya|pta|tra|dra|ndra)$', token):
             return "Male"
         return "Female"
 
+    # Terminal vowels (-i, -ee, -aa)
     if token.endswith(("i", "ee", "aa")):
         return "Female"
 
+    # Terminal Consonant default
     return "Male"
+
+# ==========================================
+# 3. FASTAPI ENDPOINTS
+# ==========================================
 
 @app.get("/")
 def home():
     return {
-        "status": "Live", 
-        "total_male_in_db": len(DB_MALE), 
-        "total_female_in_db": len(DB_FEMALE)
+        "status": "Live",
+        "total_male_in_db": len(DB_MALE),
+        "total_female_in_db": len(DB_FEMALE),
+        "total_corpus": len(DB_MALE) + len(DB_FEMALE)
     }
 
 @app.post("/predict")
