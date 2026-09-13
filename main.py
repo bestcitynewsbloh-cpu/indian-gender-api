@@ -1,12 +1,14 @@
+import os
 import re
+import urllib.request
 from typing import List
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-app = FastAPI(title="Production Indic & Bengali 50K Gender Engine")
+app = FastAPI(title="Indic & Bengali Enterprise Gender Engine")
 
 # ==========================================
-# 1. CORE INDIAN, BENGALI & ISLAMIC CORPUS
+# 1. PRESERVED HARDCODED CORPUS (ORIGINAL DATA)
 # ==========================================
 
 DB_MALE = {
@@ -123,7 +125,55 @@ DB_FEMALE = {
 }
 
 # ==========================================
-# 2. DETERMINISTIC HEURISTIC RULES
+# 2. ADD GIST DATASETS (EXPANDS BASE CORPUS)
+# ==========================================
+
+@app.on_event("startup")
+def load_gist_datasets():
+    global DB_FEMALE, DB_MALE
+    gist_sources = [
+        ("https://gist.githubusercontent.com/mbejda/9b93c7545c9dd93060bd/raw/indian-female-names.csv", "female"),
+        ("https://gist.githubusercontent.com/mbejda/7f86e35f30de9207433f/raw/indian-male-names.csv", "male")
+    ]
+
+    for url, g_type in gist_sources:
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+            )
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                lines = resp.read().decode("utf-8", errors="ignore").splitlines()
+                for line in lines[1:]:
+                    parts = line.strip().split(",")
+                    if parts and parts[0]:
+                        raw_nm = parts[0].strip().lower()
+                        clean_nm = re.sub(r'[^a-z]', '', raw_nm)
+                        if len(clean_nm) >= 2:
+                            if g_type == "female":
+                                DB_FEMALE.add(clean_nm)
+                            else:
+                                DB_MALE.add(clean_nm)
+        except Exception as e:
+            print(f"Skipping external sync from {url}: {e}")
+
+    # Agar koi common conflicts aate hain toh unhe clean karein
+    conflicts = DB_MALE.intersection(DB_FEMALE)
+    DB_MALE -= conflicts
+    DB_FEMALE -= conflicts
+
+    # Core explicit entries hamesha override aur fixed rahenge
+    DB_MALE.update([
+        "ali", "imran", "ilyas", "abhijeet", "abhijit", "abhirup", "abhishek", 
+        "subrata", "debabrata", "soumya", "joy", "tanmoy", "chinmoy", "diptesh", "krishna"
+    ])
+    DB_FEMALE.update([
+        "zainab", "zaynab", "ruby", "dolly", "pinky", "maryam", "shabnam", "tabassum", 
+        "nusrat", "zeenat", "jannat", "afreen", "yasmin", "nasrin", "parveen"
+    ])
+
+# ==========================================
+# 3. DETERMINISTIC HEURISTIC RULES
 # ==========================================
 
 FEMALE_TOKENS = {"devi", "kumari", "khatun", "bibi", "begum", "banu", "ara", "parveen", "nisa", "unissa"}
@@ -138,7 +188,7 @@ MALE_SUFFIXES = (
     "ron", "ran", "oy", "ey"
 )
 
-# Female Suffixes (Removed 'eet' conflict)
+# Female Suffixes
 FEMALE_SUFFIXES = (
     "wati", "vati", "mati", "mita", "tika", "ika", "ita", "isha", "priya",
     "shree", "sri", "lata", "mala", "bala", "dita", "purna", "lekha", "shila",
@@ -174,7 +224,7 @@ def evaluate_gender(raw_name: str) -> str:
         if t in MALE_TOKENS:
             return "Male"
 
-    # Step 2: Database Exact Match (O(1))
+    # Step 2: In-Memory Master Database Match
     if token in DB_FEMALE:
         return "Female"
     if token in DB_MALE:
@@ -185,7 +235,7 @@ def evaluate_gender(raw_name: str) -> str:
         if token.startswith(pref):
             return "Male"
 
-    # Step 4: Suffix Matches (Check Male first to catch -jeet, -jit, -joy)
+    # Step 4: Suffix Matches (Male evaluated first)
     for sfx in MALE_SUFFIXES:
         if token.endswith(sfx):
             return "Male"
@@ -212,7 +262,7 @@ def evaluate_gender(raw_name: str) -> str:
     return "Male"
 
 # ==========================================
-# 3. ENDPOINTS
+# 4. FASTAPI ENDPOINTS
 # ==========================================
 
 @app.get("/")
