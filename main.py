@@ -27,12 +27,18 @@ MALE_EXCLUSIVE_TOKENS = {
 # ==========================================
 
 DB_MALE = {
+    # Specifically Fixed Male Names (from Excel Sheet3)
+    "sudhansu", "raju", "bablu", "bismu", "bishu", "desbandhu", "desbondhu", "laltu", "nuru",
+    "pinku", "mintu", "titu", "pintu", "dukha", "sarabindu", "somu", "shanu", "suvendu",
+    "pappu", "sonu", "santanu", "arnab", "mantu", "anjisnu", "batul", "priyansu", "nintu",
+    "sirsendu", "diglu", "saju", "nihar", "sukhendu", "gullu", "soumendu", "dibyatanu",
+    "abhimanyu", "ribhu", "riju", "ratul", "nehru", "puspendu", "roki", "toni", "bisnu",
     "gauranga", "surja", "mani", "sabasachi", "sabyasachi", "parsanta", "saugata",
     "hari", "rajarshi", "sunny", "banty", "bharat", "susanta", "arkaprava",
     "bubai", "roni", "naveen", "anthony", "bapi", "sushanta", "kanhaiya", "raja",
     "chowdhury", "praveen", "prashant", "prashanta",
 
-    # Bengali Male Names
+    # Bengali & Indian Male Names
     "abhijeet", "abhijit", "abhijoy", "abhinaba", "abhinav", "abhinesh", "abhinob", "abhirup", "abhisek", "abhishek",
     "abhishrk", "abu", "adesh", "aditya", "aftab", "afzal", "ahmad", "ahmed", "ahsan",
     "ajaat", "ajay", "ajit", "ajoy", "akash", "akbar", "akhtar", "akram", "akshay",
@@ -101,12 +107,11 @@ DB_MALE = {
 }
 
 DB_FEMALE = {
-    # Names specifically fixed from latest sheet
-    "sath", "sathi", "tithe", "chhaya", "dulu", "kiran", "shaheen", "poonam",
-    "vrinda", "naheed", "putul", "sudipta", "papiya", "tabinda", "june",
+    # Specifically Fixed Female Names
+    "zainab", "zaynab", "putul", "mohar", "sath", "sathi", "tithe", "chhaya", "dulu", "kiran",
+    "shaheen", "poonam", "vrinda", "naheed", "sudipta", "papiya", "tabinda", "june",
     "ritu", "radha", "saranya", "rupal", "rikhiya", "tuku", "chandra", "siya",
-    "swagata", "mumtaz", "mehnaz", "pratibha", "venus", "taniya", "mohar",
-    "manmun", "raziya", "sultana",
+    "swagata", "mumtaz", "mehnaz", "pratibha", "venus", "taniya", "manmun", "raziya", "sultana",
 
     "aarti", "abantika", "aditi", "afreen", "afroza", "ahati", "ahona", "aindrila",
     "akshta", "alafiya", "alankrita", "alia", "alifya", "alisha", "alka", "alpona",
@@ -161,8 +166,7 @@ DB_FEMALE = {
     "tabassum", "tahmina", "tania", "tannu", "tanu", "tanushree", "tanusree", "tanvi",
     "tanzila", "tapasya", "tara", "tarannum", "tarulata", "tasnim", "teesta", "tina",
     "titas", "trisha", "tumpa", "tusi", "uma", "urmila", "usha", "utpala", "vaishali",
-    "vandana", "varsha", "vidya", "vinita", "yasmin", "yasmine", "zainab", "zaynab",
-    "zeenat", "zoya"
+    "vandana", "varsha", "vidya", "vinita", "yasmin", "yasmine", "zeenat", "zoya"
 }
 
 # ==========================================
@@ -197,7 +201,7 @@ def load_gist_datasets():
         except Exception as e:
             print(f"Skipping external sync from {url}: {e}")
 
-    # Remove overlapping names
+    # Explicit conflict resolution
     conflicts = DB_MALE.intersection(DB_FEMALE)
     DB_MALE -= conflicts
     DB_FEMALE -= conflicts
@@ -208,20 +212,23 @@ def load_gist_datasets():
 
 MALE_PREFIXES = ("abdul", "mohd", "mohammad", "muhammad", "md", "sk", "sheikh", "syed", "ghulam", "ali")
 
+# Specific masculine suffixes (includes -u derivatives like -endu, -tanu, -bindu)
 MALE_SUFFIXES = (
     "jeet", "jit", "joy", "rup", "brata", "kanta", "kanti", "sekhar", "shekhar",
     "moy", "shis", "shish", "esh", "kant", "anand", "dev", "deb", "dhar",
     "nav", "veer", "ul", "ik", "av", "ban", "ron", "oy", "ey", "arat",
-    "anthony", "prava", "rshi", "sachi"
+    "anthony", "prava", "rshi", "sachi", "endu", "tanu", "bindu", "bhandu", "bandhu",
+    "anshu", "ansu"
 )
 
+# Refined feminine suffixes (dangerous 'nab', 'tul', 'har' removed)
 FEMALE_SUFFIXES = (
     "wati", "vati", "mati", "mita", "tika", "ika", "ita", "isha", "priya",
     "shree", "sri", "lata", "mala", "bala", "dita", "purna", "lekha", "shila",
     "rekha", "nita", "jani", "shikha", "rupa", "dharini", "nandini", "sundari",
-    "nab", "eena", "ina", "usrat", "shrat", "khat", "smat", "enat", "nnat",
+    "eena", "ina", "usrat", "shrat", "khat", "smat", "enat", "nnat",
     "nam", "sum", "yeen", "reen", "min", "rin", "qis", "gis", "heen", "heed",
-    "taz", "naz", "pal", "tul", "har", "mun"
+    "taz", "naz"
 )
 
 HONORIFIC_REGEX = r'^(mr|mrs|ms|dr|shri|smt|miss|prof|master)\.?\s+'
@@ -244,7 +251,7 @@ def evaluate_gender(raw_name: str) -> str:
     if not token:
         return "Male"
 
-    # Step 1: Check Female Explicit Honorifics / Titles across full name (Kumari, Devi, Khatun, Sultana)
+    # Step 1: Check Female Explicit Honorifics / Titles across full name
     for t in tokens:
         if t in FEMALE_TOKENS:
             return "Female"
@@ -260,32 +267,36 @@ def evaluate_gender(raw_name: str) -> str:
         if t in MALE_EXCLUSIVE_TOKENS:
             return "Male"
 
-    # Step 4: Prefix Check on First Name
+    # Step 4: Prefix Check on First Name (Abdul, Sk, Md, Ali)
     for pref in MALE_PREFIXES:
         if token.startswith(pref):
             return "Male"
 
-    # Step 5: Check Female Suffixes
-    for sfx in FEMALE_SUFFIXES:
-        if token.endswith(sfx):
-            return "Female"
-
-    # Step 6: Check Male Suffixes
+    # Step 5: Male Suffixes Check (Preserves -endu, -tanu, -bindu, -jeet, etc.)
     for sfx in MALE_SUFFIXES:
         if token.endswith(sfx):
             return "Male"
 
-    # Step 7: Sanskrit Masculine Conjuncts ending in -a (Safeguard feminine -a names)
+    # Step 6: Female Suffixes Check
+    for sfx in FEMALE_SUFFIXES:
+        if token.endswith(sfx):
+            return "Female"
+
+    # Step 7: Sanskrit Masculine Conjuncts ending in -a
     if token.endswith("a"):
-        if re.search(r'(rta|nya|tya|rka|nda|mba|rya|tra|dra|ndra|ranga|prava)$', token):
+        if re.search(r'(rta|nya|tya|rka|nda|mba|rya|tra|dra|ndra|ranga|prava|kha)$', token):
             return "Male"
         return "Female"
 
-    # Step 8: Terminal Vowels typical to feminine Indian names (-i, -u, -ee, -aa)
-    if token.endswith(("i", "u", "ee", "aa")):
+    # Step 8: Terminal -u in Bengali / Indian names is overwhelmingly MALE (Raju, Bablu, Pintu, Sonu)
+    if token.endswith("u"):
+        return "Male"
+
+    # Step 9: Terminal Vowels typical to feminine names (-i, -ee, -aa)
+    if token.endswith(("i", "ee", "aa")):
         return "Female"
 
-    # Step 9: Anglo-Indian Pet Names (-y)
+    # Step 10: Anglo-Indian Pet Names (-y)
     if token.endswith("y") and not token.endswith(("oy", "ay", "ey")):
         return "Female"
 
