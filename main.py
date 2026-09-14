@@ -2,6 +2,7 @@ import os
 import json
 import re
 import joblib
+from functools import lru_cache
 from typing import List
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -109,7 +110,7 @@ def normalize_name(raw_name: str):
     tokens = [re.sub(r'[^a-z]', '', t) for t in re.split(r'[\s\-]+', clean) if t]
     first_token = tokens[0] if tokens else ""
     return tokens, first_token
-
+@lru_cache(maxsize=100000)
 def evaluate_gender(raw_name: str) -> str:
     tokens, token = normalize_name(raw_name)
     if not token:
