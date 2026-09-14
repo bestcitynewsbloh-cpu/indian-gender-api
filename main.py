@@ -1,19 +1,26 @@
 import os
 import json
 import re
+import joblib
 from typing import List
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-app = FastAPI(title="Indic & Bengali Enterprise Gender Engine")
+app = FastAPI(title="Indic & Bengali Enterprise Hybrid Gender Engine")
 
 DB_MALE = set()
 DB_FEMALE = set()
+ml_model = None
 
-# Server start hote hi local 38K+ names_db.json load karega
+# ==========================================
+# 1. STARTUP: LOAD JSON & ML MODEL
+# ==========================================
+
 @app.on_event("startup")
-def load_database():
-    global DB_MALE, DB_FEMALE
+def load_all_assets():
+    global DB_MALE, DB_FEMALE, ml_model
+
+    # Load 38K+ JSON Database
     json_path = "names_db.json"
     if os.path.exists(json_path):
         try:
@@ -21,11 +28,11 @@ def load_database():
                 data = json.load(f)
                 DB_MALE = set(data.get("male", []))
                 DB_FEMALE = set(data.get("female", []))
-            print(f"Loaded {len(DB_MALE)} Male and {len(DB_FEMALE)} Female names from {json_path}")
+            print(f"Loaded {len(DB_MALE)} Male and {len(DB_FEMALE)} Female names from database.")
         except Exception as e:
             print(f"Error loading {json_path}: {e}")
 
-    # Core explicit overrides taaki edge-cases hamesha 100% accurate rahein
+    # Core high-priority overrides (Conflict proof)
     DB_MALE.update([
         "sudhansu", "raju", "bablu", "bismu", "bishu", "desbandhu", "desbondhu", "laltu", "nuru",
         "pinku", "mintu", "titu", "pintu", "dukha", "sarabindu", "somu", "shanu", "suvendu",
@@ -41,11 +48,21 @@ def load_database():
         "zainab", "zaynab", "putul", "mohar", "sath", "sathi", "tithe", "chhaya", "dulu", "kiran",
         "shaheen", "poonam", "vrinda", "naheed", "sudipta", "papiya", "tabinda", "june",
         "ritu", "radha", "saranya", "rupal", "rikhiya", "tuku", "chandra", "siya",
-        "swagata", "mumtaz", "mehnaz", "pratibha", "venus", "taniya", "manmun", "raziya", "sultana"
+        "swagata", "mumtaz", "mehnaz", "pratibha", "venus", "taniya", "manmun", "raziya", "sultana",
+        "tusi", "sharmista", "shrestha", "rina", "shabnam", "poli", "auswa", "antara"
     ])
 
+    # Load ML Model (.pkl)
+    model_path = "gender_model.pkl"
+    if os.path.exists(model_path):
+        try:
+            ml_model = joblib.load(model_path)
+            print("Successfully loaded trained ML model (gender_model.pkl)!")
+        except Exception as e:
+            print(f"Error loading {model_path}: {e}")
+
 # ==========================================
-# REFINED MORPHOLOGICAL RULES
+# 2. TOKENS & MORPHOLOGICAL GUARDS
 # ==========================================
 
 FEMALE_TOKENS = {
@@ -98,38 +115,50 @@ def evaluate_gender(raw_name: str) -> str:
     if not token:
         return "Male"
 
+    # Rule 1: Full-name honorific tokens (100% certainty)
     for t in tokens:
         if t in FEMALE_TOKENS:
             return "Female"
+    for t in tokens:
+        if t in MALE_EXCLUSIVE_TOKENS:
+            return "Male"
 
+    # Rule 2: Database Exact Match (Zero-error lookup)
     if token in DB_FEMALE:
         return "Female"
     if token in DB_MALE:
         return "Male"
 
-    for t in tokens:
-        if t in MALE_EXCLUSIVE_TOKENS:
-            return "Male"
-
+    # Rule 3: Strict Prefix Guards
     for pref in MALE_PREFIXES:
         if token.startswith(pref):
             return "Male"
 
+    # Rule 4: Structural Indian & Bengali Suffixes
     for sfx in MALE_SUFFIXES:
         if token.endswith(sfx):
             return "Male"
-
     for sfx in FEMALE_SUFFIXES:
         if token.endswith(sfx):
             return "Female"
 
+    # Rule 5: Terminal -u in Bengali / Indian is overwhelmingly MALE (Raju, Bablu, Pintu)
+    if token.endswith("u"):
+        return "Male"
+
+    # Rule 6: Machine Learning Pipeline (Trained on 1.1 Lakh Truecaller Data)
+    if ml_model is not None:
+        try:
+            prediction = ml_model.predict([token])[0]
+            return str(prediction)
+        except Exception:
+            pass
+
+    # Rule 7: Final Fallback Heuristics
     if token.endswith("a"):
         if re.search(r'(rta|nya|tya|rka|nda|mba|rya|tra|dra|ndra|ranga|prava|kha)$', token):
             return "Male"
         return "Female"
-
-    if token.endswith("u"):
-        return "Male"
 
     if token.endswith(("i", "ee", "aa")):
         return "Female"
@@ -139,13 +168,19 @@ def evaluate_gender(raw_name: str) -> str:
 
     return "Male"
 
+# ==========================================
+# 3. FASTAPI ENDPOINTS
+# ==========================================
+
 @app.get("/")
 def home():
     return {
         "status": "Live",
+        "engine": "Hybrid (Rules + Database + Scikit-Learn ML)",
         "total_male_in_db": len(DB_MALE),
         "total_female_in_db": len(DB_FEMALE),
-        "total_corpus": len(DB_MALE) + len(DB_FEMALE)
+        "total_corpus": len(DB_MALE) + len(DB_FEMALE),
+        "ml_model_loaded": ml_model is not None
     }
 
 @app.post("/predict")
