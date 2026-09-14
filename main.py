@@ -12,16 +12,17 @@ app = FastAPI(title="Indic & Bengali Enterprise Hybrid Gender Engine")
 DB_MALE = set()
 DB_FEMALE = set()
 ml_model = None
+FEEDBACK_FILE = "user_feedbacks.json"
 
 # ==========================================
-# 1. STARTUP: LOAD JSON & ML MODEL
+# 1. STARTUP: LOAD JSON, OVERRIDES & ML MODEL
 # ==========================================
 
 @app.on_event("startup")
 def load_all_assets():
     global DB_MALE, DB_FEMALE, ml_model
 
-    # Load 38K+ JSON Database
+    # 1. Master JSON Database Load
     json_path = "names_db.json"
     if os.path.exists(json_path):
         try:
@@ -33,7 +34,7 @@ def load_all_assets():
         except Exception as e:
             print(f"Error loading {json_path}: {e}")
 
-    # Core high-priority overrides (Conflict proof)
+    # 2. High-Priority Hard Overrides
     DB_MALE.update([
         "sudhansu", "raju", "bablu", "bismu", "bishu", "desbandhu", "desbondhu", "laltu", "nuru",
         "pinku", "mintu", "titu", "pintu", "dukha", "sarabindu", "somu", "shanu", "suvendu",
@@ -53,7 +54,23 @@ def load_all_assets():
         "tusi", "sharmista", "shrestha", "rina", "shabnam", "poli", "auswa", "antara"
     ])
 
-    # Load ML Model (.pkl)
+    # 3. Load Previously Saved User Feedbacks
+    if os.path.exists(FEEDBACK_FILE):
+        try:
+            with open(FEEDBACK_FILE, "r", encoding="utf-8") as f:
+                feedbacks = json.load(f)
+                for name, g in feedbacks.items():
+                    if g == "Male":
+                        DB_MALE.add(name)
+                        DB_FEMALE.discard(name)
+                    elif g == "Female":
+                        DB_FEMALE.add(name)
+                        DB_MALE.discard(name)
+            print(f"Loaded {len(feedbacks)} learned corrections into memory.")
+        except Exception as e:
+            print(f"Error loading {FEEDBACK_FILE}: {e}")
+
+    # 4. Scikit-Learn Model Load
     model_path = "gender_model.pkl"
     if os.path.exists(model_path):
         try:
@@ -98,6 +115,10 @@ FEMALE_SUFFIXES = (
 
 HONORIFIC_REGEX = r'^(mr|mrs|ms|dr|shri|smt|miss|prof|master)\.?\s+'
 
+# ==========================================
+# 3. PYDANTIC SCHEMAS
+# ==========================================
+
 class PredictRequest(BaseModel):
     name: str
 
@@ -107,19 +128,25 @@ class BatchPredictRequest(BaseModel):
 class FeedbackRequest(BaseModel):
     name: str
     correct_gender: str
+
+# ==========================================
+# 4. PREDICTION CORE ENGINE
+# ==========================================
+
 def normalize_name(raw_name: str):
     clean = raw_name.lower().strip()
     clean = re.sub(HONORIFIC_REGEX, '', clean)
     tokens = [re.sub(r'[^a-z]', '', t) for t in re.split(r'[\s\-]+', clean) if t]
     first_token = tokens[0] if tokens else ""
     return tokens, first_token
+
 @lru_cache(maxsize=100000)
 def evaluate_gender(raw_name: str) -> str:
     tokens, token = normalize_name(raw_name)
     if not token:
         return "Male"
 
-    # Rule 1: Full-name honorific tokens (100% certainty)
+    # Step 1: Honorific tokens check
     for t in tokens:
         if t in FEMALE_TOKENS:
             return "Female"
@@ -127,18 +154,18 @@ def evaluate_gender(raw_name: str) -> str:
         if t in MALE_EXCLUSIVE_TOKENS:
             return "Male"
 
-    # Rule 2: Database Exact Match (Zero-error lookup)
+    # Step 2: Database Exact Match
     if token in DB_FEMALE:
         return "Female"
     if token in DB_MALE:
         return "Male"
 
-    # Rule 3: Strict Prefix Guards
+    # Step 3: Prefix Match
     for pref in MALE_PREFIXES:
         if token.startswith(pref):
             return "Male"
 
-    # Rule 4: Structural Indian & Bengali Suffixes
+    # Step 4: Suffix Match
     for sfx in MALE_SUFFIXES:
         if token.endswith(sfx):
             return "Male"
@@ -146,19 +173,18 @@ def evaluate_gender(raw_name: str) -> str:
         if token.endswith(sfx):
             return "Female"
 
-    # Rule 5: Terminal -u in Bengali / Indian is overwhelmingly MALE (Raju, Bablu, Pintu)
+    # Step 5: Terminal -u rule
     if token.endswith("u"):
         return "Male"
 
-    # Rule 6: Machine Learning Pipeline (Trained on 1.1 Lakh Truecaller Data)
+    # Step 6: ML Model Fallback
     if ml_model is not None:
         try:
-            prediction = ml_model.predict([token])[0]
-            return str(prediction)
+            return str(ml_model.predict([token])[0])
         except Exception:
             pass
 
-    # Rule 7: Final Fallback Heuristics
+    # Step 7: Heuristic Vowel Ending Fallback
     if token.endswith("a"):
         if re.search(r'(rta|nya|tya|rka|nda|mba|rya|tra|dra|ndra|ranga|prava|kha)$', token):
             return "Male"
@@ -173,7 +199,7 @@ def evaluate_gender(raw_name: str) -> str:
     return "Male"
 
 # ==========================================
-# 3. FASTAPI ENDPOINTS
+# 5. FASTAPI ROUTES
 # ==========================================
 
 @app.get("/")
@@ -198,15 +224,13 @@ def predict(req: PredictRequest):
 
 @app.post("/predict-batch")
 def predict_batch(req: BatchPredictRequest):
-    
-    
-    FEEDBACK_FILE = "user_feedbacks.json"
+    return [{"name": nm, "gender": evaluate_gender(nm)} for nm in req.names]
 
 @app.post("/feedback")
 def submit_feedback(data: FeedbackRequest):
     _, token = normalize_name(data.name)
     gender_input = data.correct_gender.capitalize()
-    
+
     if not token or gender_input not in ["Male", "Female"]:
         return {"status": "error", "message": "Invalid name or gender"}
 
@@ -222,6 +246,7 @@ def submit_feedback(data: FeedbackRequest):
     with open(FEEDBACK_FILE, "w", encoding="utf-8") as f:
         json.dump(feedbacks, f, ensure_ascii=False, indent=2)
 
+    # In-memory instant update
     if gender_input == "Male":
         DB_MALE.add(token)
         DB_FEMALE.discard(token)
@@ -229,6 +254,7 @@ def submit_feedback(data: FeedbackRequest):
         DB_FEMALE.add(token)
         DB_MALE.discard(token)
 
+    # Cache clear
     evaluate_gender.cache_clear()
 
     return {
