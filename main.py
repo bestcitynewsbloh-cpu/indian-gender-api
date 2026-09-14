@@ -104,6 +104,9 @@ class PredictRequest(BaseModel):
 class BatchPredictRequest(BaseModel):
     names: List[str]
 
+class FeedbackRequest(BaseModel):
+    name: str
+    correct_gender: str
 def normalize_name(raw_name: str):
     clean = raw_name.lower().strip()
     clean = re.sub(HONORIFIC_REGEX, '', clean)
@@ -195,4 +198,41 @@ def predict(req: PredictRequest):
 
 @app.post("/predict-batch")
 def predict_batch(req: BatchPredictRequest):
-    return [{"name": nm, "gender": evaluate_gender(nm)} for nm in req.names]
+    
+    
+    FEEDBACK_FILE = "user_feedbacks.json"
+
+@app.post("/feedback")
+def submit_feedback(data: FeedbackRequest):
+    _, token = normalize_name(data.name)
+    gender_input = data.correct_gender.capitalize()
+    
+    if not token or gender_input not in ["Male", "Female"]:
+        return {"status": "error", "message": "Invalid name or gender"}
+
+    feedbacks = {}
+    if os.path.exists(FEEDBACK_FILE):
+        try:
+            with open(FEEDBACK_FILE, "r", encoding="utf-8") as f:
+                feedbacks = json.load(f)
+        except Exception:
+            feedbacks = {}
+
+    feedbacks[token] = gender_input
+    with open(FEEDBACK_FILE, "w", encoding="utf-8") as f:
+        json.dump(feedbacks, f, ensure_ascii=False, indent=2)
+
+    if gender_input == "Male":
+        DB_MALE.add(token)
+        DB_FEMALE.discard(token)
+    else:
+        DB_FEMALE.add(token)
+        DB_MALE.discard(token)
+
+    evaluate_gender.cache_clear()
+
+    return {
+        "status": "success",
+        "message": f"'{token}' ko '{gender_input}' ke roop mein save kar liya gaya hai.",
+        "total_feedbacks": len(feedbacks)
+    }
