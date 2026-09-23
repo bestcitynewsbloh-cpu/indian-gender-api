@@ -97,11 +97,9 @@ FEMALE_TOKENS = {
     "rani", "banu", "bai", "amma", "mati", "moni"
 }
 
+# Sirf strict male middle names / honorifics (SURNAMES HATAYE GAYE)
 MALE_EXCLUSIVE_TOKENS = {
-    "kumar", "chandra", "sekhar", "shekhar", "prasad", "nath", "kant",
-    "kanta", "lal", "mohan", "kishore", "babu", "da", "uddin", "ali",
-    "khan", "hossain", "hussain", "islam", "ansari", "mondal", "ghosh",
-    "das", "paul", "dey", "roy", "sen", "dutta", "biswas", "sarkar"
+    "kumar", "prasad", "kant", "lal", "mohan", "kishore", "babu", "da"
 }
 
 MALE_PREFIXES = (
@@ -156,25 +154,28 @@ def evaluate_gender(raw_name: str) -> str:
     if not token:
         return "Male"
 
-    # Rule 1: Full-name honorific tokens
-    for t in tokens:
-        if t in FEMALE_TOKENS:
-            return "Female"
-        if t in MALE_EXCLUSIVE_TOKENS:
-            return "Male"
-
-    # Rule 2: Database Exact Match (Highest Priority)
+    # Step 1: Database Exact Match on FIRST NAME (Sabse Highest Priority)
     if token in DB_FEMALE:
         return "Female"
     if token in DB_MALE:
         return "Male"
 
-    # Rule 3: Strict Prefix Guards
+    # Step 2: Specific Female Honorifics (e.g., Devi, Begum, Kumari)
+    for t in tokens:
+        if t in FEMALE_TOKENS:
+            return "Female"
+
+    # Step 3: Specific Male Middle Tokens (e.g., Kumar, Prasad)
+    for t in tokens[1:]:
+        if t in MALE_EXCLUSIVE_TOKENS:
+            return "Male"
+
+    # Step 4: Strict Prefix Guards
     for pref in MALE_PREFIXES:
         if token.startswith(pref):
             return "Male"
 
-    # Rule 4: Structural Suffixes
+    # Step 5: Structural Suffixes
     for sfx in MALE_SUFFIXES:
         if token.endswith(sfx):
             return "Male"
@@ -182,11 +183,11 @@ def evaluate_gender(raw_name: str) -> str:
         if token.endswith(sfx):
             return "Female"
 
-    # Rule 5: Terminal -u in Bengali / Indian names
+    # Step 6: Terminal -u in Bengali / Indian names
     if token.endswith("u"):
         return "Male"
 
-    # Rule 6: Scikit-Learn Model Prediction
+    # Step 7: Scikit-Learn Model Prediction
     if ml_model is not None:
         try:
             prediction = ml_model.predict([token])[0]
@@ -194,7 +195,7 @@ def evaluate_gender(raw_name: str) -> str:
         except Exception:
             pass
 
-    # Rule 7: Heuristic Fallbacks
+    # Step 8: Heuristic Fallbacks
     if token.endswith("a"):
         if re.search(r'(rta|nya|tya|rka|nda|mba|rya|tra|dra|ndra|ranga|prava|kha)$', token):
             return "Male"
