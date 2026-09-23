@@ -34,18 +34,34 @@ ml_model = None
 def load_all_assets():
     global DB_MALE, DB_FEMALE, ml_model
 
-    # Load Database Names
-    if os.path.exists("male_names.json"):
+    # 1. Load Primary names_db.json Database
+    for db_file in ["names_db.json", "names_db_2.json"]:
+        if os.path.exists(db_file):
+            try:
+                with open(db_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        if "male" in data:
+                            DB_MALE.update([str(x).lower().strip() for x in data["male"] if x])
+                        if "female" in data:
+                            DB_FEMALE.update([str(x).lower().strip() for x in data["female"] if x])
+                print(f"Loaded {len(DB_MALE)} Male and {len(DB_FEMALE)} Female names from {db_file}")
+                break
+            except Exception as e:
+                print(f"Error loading {db_file}: {e}")
+
+    # Fallback for separate files if present
+    if not DB_MALE and os.path.exists("male_names.json"):
         try:
             with open("male_names.json", "r", encoding="utf-8") as f:
-                DB_MALE.update([x.lower().strip() for x in json.load(f) if x])
+                DB_MALE.update([str(x).lower().strip() for x in json.load(f) if x])
         except Exception as e:
             print(f"Error loading male_names.json: {e}")
 
-    if os.path.exists("female_names.json"):
+    if not DB_FEMALE and os.path.exists("female_names.json"):
         try:
             with open("female_names.json", "r", encoding="utf-8") as f:
-                DB_FEMALE.update([x.lower().strip() for x in json.load(f) if x])
+                DB_FEMALE.update([str(x).lower().strip() for x in json.load(f) if x])
         except Exception as e:
             print(f"Error loading female_names.json: {e}")
 
@@ -63,12 +79,13 @@ def load_all_assets():
             with open("user_feedbacks.json", "r", encoding="utf-8") as f:
                 saved_feedbacks = json.load(f)
                 for nm, g in saved_feedbacks.items():
+                    clean_nm = str(nm).lower().strip()
                     if g == "Male":
-                        DB_MALE.add(nm)
-                        DB_FEMALE.discard(nm)
+                        DB_MALE.add(clean_nm)
+                        DB_FEMALE.discard(clean_nm)
                     elif g == "Female":
-                        DB_FEMALE.add(nm)
-                        DB_MALE.discard(nm)
+                        DB_FEMALE.add(clean_nm)
+                        DB_MALE.discard(clean_nm)
         except Exception as e:
             print(f"Error syncing feedbacks on startup: {e}")
 
@@ -146,7 +163,7 @@ def evaluate_gender(raw_name: str) -> str:
         if t in MALE_EXCLUSIVE_TOKENS:
             return "Male"
 
-    # Rule 2: Database Exact Match
+    # Rule 2: Database Exact Match (Highest Priority)
     if token in DB_FEMALE:
         return "Female"
     if token in DB_MALE:
